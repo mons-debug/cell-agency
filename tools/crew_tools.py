@@ -68,13 +68,44 @@ def list_dir_tool(path: str) -> str:
 
 # ─── CLIENT REGISTRY ──────────────────────────────────────────────────────────
 
+CLIENT_ALIASES = {
+    "refine-clinic": "refine",
+    "refine": "refine",
+    "lubina-blanca": "lubina_blanca",
+    "lubina_blanca": "lubina_blanca",
+}
+
+
+def _resolve_client(client_id: str) -> str:
+    """Resolve client ID through aliases for backward compat."""
+    return CLIENT_ALIASES.get(client_id, client_id)
+
+
 @tool("Read Brand Vault")
 def read_brand_vault_tool(client_id: str) -> str:
     """Read a client's brand identity, colors, tone, services, and guidelines."""
-    vault = CLIENTS_DIR / client_id / "brand_vault.md"
+    resolved = _resolve_client(client_id)
+    vault = CLIENTS_DIR / resolved / "brand_vault.md"
     if not vault.exists():
-        return f"No brand vault found for '{client_id}'. Available: {[d.name for d in CLIENTS_DIR.iterdir() if d.is_dir()]}"
+        # Try original ID as fallback
+        vault = CLIENTS_DIR / client_id / "brand_vault.md"
+    if not vault.exists():
+        return f"No brand vault found for '{client_id}'. Available: {[d.name for d in CLIENTS_DIR.iterdir() if d.is_dir() and not d.name.startswith('.')]}"
     return vault.read_text(encoding="utf-8")
+
+
+@tool("Read Brand Kit")
+def read_brandkit_tool(client_id: str) -> str:
+    """
+    Read a client's structured brand kit (JSON).
+    Contains colors, fonts, tone, audience, services, posting guidelines.
+    Use this instead of Read Brand Vault for machine-readable brand data.
+    """
+    resolved = _resolve_client(client_id)
+    kit = CLIENTS_DIR / resolved / "brandkit.json"
+    if not kit.exists():
+        return f"No brandkit.json found for '{client_id}'. Available: {[d.name for d in CLIENTS_DIR.iterdir() if d.is_dir() and not d.name.startswith('.')]}"
+    return kit.read_text(encoding="utf-8")
 
 
 @tool("Update Brand Vault")
@@ -666,6 +697,7 @@ TOOL_REGISTRY = {
     "agency.list_dir": list_dir_tool,
     # Client tools
     "agency.read_brand_vault": read_brand_vault_tool,
+    "agency.read_brandkit": read_brandkit_tool,
     "agency.update_brand_vault": update_brand_vault_tool,
     "agency.list_clients": list_clients_tool,
     # Calendar tools

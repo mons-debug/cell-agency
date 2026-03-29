@@ -1,0 +1,67 @@
+{
+  "name": "Lubina Blanca",
+  "short_name": "Lubina Blanca",
+  "industry": "restaurant",
+  "location": {
+    "city": "Tanger",
+    "area": "",
+    "country": "Morocco"
+  },
+  "colors": {
+    "primary": "",
+    "secondary": "",
+    "accent": "",
+    "text": ""
+  },
+  "fonts": {
+    "heading": "",
+    "body": "",
+    "arabic": ""
+  },
+  "tone_of_voice": {
+    "french": "",
+    "darija": "",
+    "avoid": []
+  },
+  "audience": {
+    "primary": {
+      "name": "",
+      "age": "",
+      "profile": "",
+      "goals": "",
+      "pain_points": ""
+    },
+    "secondary": {
+      "name": "",
+      "age": "",
+      "profile": "",
+      "goals": ""
+    }
+  },
+  "languages": ["fr", "ar", "darija"],
+  "logo_path": "clients/lubina_blanca/logo/",
+  "tagline": {
+    "fr": "",
+    "ar": ""
+  },
+  "social": {
+    "instagram": "",
+    "facebook": "",
+    "website": ""
+  },
+  "services": [],
+  "content_themes": [],
+  "posting": {
+    "frequency": "",
+    "best_times": [],
+    "hashtags": {
+      "french": [],
+      "arabic": [],
+      "local": []
+    }
+  },
+  "sensitivity": [],
+  "goals_2026": [],
+  "added": "2026-03-29",
+  "status": "onboarding"
+}

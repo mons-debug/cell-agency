@@ -1,0 +1,97 @@
+{
+  "name": "Refine Beauty Clinic",
+  "short_name": "Refine Clinic",
+  "industry": "medical_aesthetics",
+  "location": {
+    "city": "Tanger",
+    "area": "Malabata",
+    "country": "Morocco"
+  },
+  "colors": {
+    "primary": "#C9A98A",
+    "secondary": "#FAF7F5",
+    "accent": "#8B1A2F",
+    "text": "#2C2C2C"
+  },
+  "fonts": {
+    "heading": "Playfair Display",
+    "body": "Lato",
+    "arabic": "Noto Naskh Arabic"
+  },
+  "tone_of_voice": {
+    "french": "Professional yet warm, reassuring, aspirational without being inaccessible",
+    "darija": "Friendly, conversational, relatable",
+    "avoid": [
+      "Exaggerated health claims",
+      "Before/after without disclaimer",
+      "Body-shaming comparisons",
+      "Excessive anglicisms"
+    ]
+  },
+  "audience": {
+    "primary": {
+      "name": "Yasmina",
+      "age": "28-42",
+      "profile": "Professional, business owner, financially comfortable",
+      "goals": "Look polished, skin health, confidence",
+      "pain_points": "Unwanted hair, uneven skin tone, aging signs"
+    },
+    "secondary": {
+      "name": "Nora",
+      "age": "22-30",
+      "profile": "Student or young professional",
+      "goals": "Affordable treatments, trending aesthetics"
+    }
+  },
+  "languages": ["fr", "ar", "darija"],
+  "logo_path": "clients/refine/logo/",
+  "tagline": {
+    "fr": "Votre beaut\u00e9, notre expertise",
+    "ar": "\u062c\u0645\u0627\u0644\u0643\u060c \u062e\u0628\u0631\u062a\u0646\u0627"
+  },
+  "social": {
+    "instagram": "@refineclinic.tanger",
+    "facebook": "",
+    "website": ""
+  },
+  "services": [
+    {"name": "\u00c9pilation laser", "details": "Corps entier, visage, zones sp\u00e9cifiques"},
+    {"name": "Soin visage", "details": "Hydratation, anti-\u00e2ge, traitement acn\u00e9"},
+    {"name": "Peeling chimique", "details": "\u00c9clat, taches, texture"},
+    {"name": "M\u00e9soth\u00e9rapie", "details": "Rajeunissement, \u00e9clat"},
+    {"name": "Traitement cellulite", "details": "Corps, raffermissement"},
+    {"name": "Soin corps", "details": "Enveloppements, soins relaxants"}
+  ],
+  "content_themes": [
+    "before_after",
+    "education",
+    "behind_the_scenes",
+    "promotions",
+    "testimonials",
+    "beauty_tips",
+    "local_flavor"
+  ],
+  "posting": {
+    "frequency": "4-5 feed posts/week, daily stories",
+    "best_times": ["08:00", "12:30", "19:30"],
+    "hashtags": {
+      "french": ["#RefineClinique", "#EpilationLaserTanger", "#SoinVisageTanger", "#BeautéTanger"],
+      "arabic": ["#\u0625\u0632\u0627\u0644\u0629_\u0627\u0644\u0634\u0639\u0631_\u0628\u0627\u0644\u0644\u064a\u0632\u0631", "#\u0639\u064a\u0627\u062f\u0629_\u062a\u062c\u0645\u064a\u0644_\u0637\u0646\u062c\u0629"],
+      "local": ["#Tanger", "#Malabata", "#MarocBeauté"]
+    }
+  },
+  "sensitivity": [
+    "Never post medical before/afters without disclaimer",
+    "No claims of permanent hair removal — say réduction durable",
+    "Laser posts: always mention consultation required",
+    "Client photos require written consent"
+  ],
+  "goals_2026": [
+    "Grow Instagram to 5000+ Tanger-local followers",
+    "Generate 20+ booking inquiries/month via social",
+    "Top aesthetic clinic on Instagram in Tanger",
+    "Launch 2+ Meta Ads campaigns before summer"
+  ],
+  "added": "2026-03-28",
+  "status": "active"
+}

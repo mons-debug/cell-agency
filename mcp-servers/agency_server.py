@@ -28,6 +28,19 @@ AGENCY_DIR = Path.home() / "agency"
 CLIENTS_DIR = AGENCY_DIR / "clients"
 CHROMA_PATH = AGENCY_DIR / ".chromadb"
 
+# ─── Client aliases for backward compatibility ───────────────────────────────
+CLIENT_ALIASES = {
+    "refine-clinic": "refine",
+    "refine": "refine",
+    "lubina-blanca": "lubina_blanca",
+    "lubina_blanca": "lubina_blanca",
+}
+
+
+def resolve_client_id(client_id: str) -> str:
+    """Resolve a client ID, supporting aliases for backward compat."""
+    return CLIENT_ALIASES.get(client_id, client_id)
+
 # ─── ChromaDB client (persistent) ─────────────────────────────────────────────
 _chroma_client: Optional[chromadb.PersistentClient] = None
 
@@ -180,13 +193,24 @@ def list_clients() -> list[dict]:
     clients = []
     if not CLIENTS_DIR.exists():
         return clients
-    for client_dir in CLIENTS_DIR.iterdir():
-        if client_dir.is_dir():
+    for client_dir in sorted(CLIENTS_DIR.iterdir()):
+        if client_dir.is_dir() and not client_dir.name.startswith("."):
             vault = client_dir / "brand_vault.md"
+            brandkit = client_dir / "brandkit.json"
+            # Try to read name from brandkit.json
+            name = client_dir.name.replace("-", " ").replace("_", " ").title()
+            if brandkit.exists():
+                try:
+                    data = json.loads(brandkit.read_text(encoding="utf-8"))
+                    name = data.get("name", name)
+                except Exception:
+                    pass
             clients.append({
                 "id": client_dir.name,
-                "name": client_dir.name.replace("-", " ").title(),
+                "name": name,
                 "has_brand_vault": vault.exists(),
+                "has_brandkit": brandkit.exists(),
+                "status": "active" if brandkit.exists() else "legacy",
                 "path": str(client_dir),
             })
     return clients
@@ -207,18 +231,52 @@ def create_client(client_id: str, name: str, industry: str, location: str = "") 
     if client_dir.exists():
         return f"Client '{client_id}' already exists at {client_dir}"
 
-    # Create folder structure
-    for subdir in ["campaigns", "assets", "reports"]:
+    # Create folder structure (new layout: images, videos, logo + legacy: campaigns, assets, reports)
+    for subdir in ["images", "videos", "logo", "campaigns", "assets", "reports"]:
         (client_dir / subdir).mkdir(parents=True, exist_ok=True)
 
-    # Create brand vault template
+    # Create brandkit.json (structured, machine-readable)
+    from datetime import date as _date
+    brandkit = {
+        "name": name,
+        "short_name": name,
+        "industry": industry,
+        "location": {"city": location, "area": "", "country": ""},
+        "colors": {"primary": "", "secondary": "", "accent": "", "text": ""},
+        "fonts": {"heading": "", "body": "", "arabic": ""},
+        "tone_of_voice": {"french": "", "darija": "", "avoid": []},
+        "audience": {
+            "primary": {"name": "", "age": "", "profile": "", "goals": "", "pain_points": ""},
+            "secondary": {"name": "", "age": "", "profile": "", "goals": ""},
+        },
+        "languages": ["fr", "ar"],
+        "logo_path": f"clients/{client_id}/logo/",
+        "tagline": {"fr": "", "ar": ""},
+        "social": {"instagram": "", "facebook": "", "website": ""},
+        "services": [],
+        "content_themes": [],
+        "posting": {
+            "frequency": "",
+            "best_times": [],
+            "hashtags": {"french": [], "arabic": [], "local": []},
+        },
+        "sensitivity": [],
+        "goals_2026": [],
+        "added": str(_date.today()),
+        "status": "onboarding",
+    }
+    (client_dir / "brandkit.json").write_text(
+        json.dumps(brandkit, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
+    # Create brand vault template (human-readable)
     vault_content = f"""# Brand Vault — {name}
 
 ## Basic Info
 - **Name:** {name}
 - **Industry:** {industry}
 - **Location:** {location}
-- **Added:** {__import__('datetime').date.today()}
+- **Added:** {_date.today()}
 
 ## Brand Identity
 - **Primary color:** TBD
@@ -250,13 +308,20 @@ TBD — professional / friendly / luxurious / etc.
     (client_dir / "brand_vault.md").write_text(vault_content, encoding="utf-8")
     (client_dir / "calendar.md").write_text(f"# Content Calendar — {name}\n\n", encoding="utf-8")
 
+    # Register alias
+    CLIENT_ALIASES[client_id] = client_id
+
     return f"Client '{name}' created at {client_dir}"
 
 
 @mcp.tool()
 def read_brand_vault(client_id: str) -> str:
     """Read a client's brand vault (identity, colors, tone, guidelines)."""
-    vault_path = CLIENTS_DIR / client_id / "brand_vault.md"
+    resolved = resolve_client_id(client_id)
+    vault_path = CLIENTS_DIR / resolved / "brand_vault.md"
+    if not vault_path.exists():
+        # Try original ID as fallback
+        vault_path = CLIENTS_DIR / client_id / "brand_vault.md"
     if not vault_path.exists():
         raise FileNotFoundError(f"No brand vault found for client '{client_id}'")
     return vault_path.read_text(encoding="utf-8")
@@ -265,10 +330,67 @@ def read_brand_vault(client_id: str) -> str:
 @mcp.tool()
 def update_brand_vault(client_id: str, content: str) -> str:
     """Overwrite a client's brand vault with new content."""
-    vault_path = CLIENTS_DIR / client_id / "brand_vault.md"
+    resolved = resolve_client_id(client_id)
+    vault_path = CLIENTS_DIR / resolved / "brand_vault.md"
     vault_path.parent.mkdir(parents=True, exist_ok=True)
     vault_path.write_text(content, encoding="utf-8")
-    return f"Brand vault updated for '{client_id}'"
+    return f"Brand vault updated for '{resolved}'"
+
+
+@mcp.tool()
+def read_brandkit(client_id: str) -> str:
+    """
+    Read a client's structured brand kit (JSON format).
+    Contains colors, fonts, tone, audience, services, posting guidelines.
+
+    Args:
+        client_id: Client identifier (e.g. 'refine', 'lubina_blanca')
+
+    Returns:
+        JSON string with full brand kit data
+    """
+    resolved = resolve_client_id(client_id)
+    kit_path = CLIENTS_DIR / resolved / "brandkit.json"
+    if not kit_path.exists():
+        raise FileNotFoundError(
+            f"No brandkit.json found for client '{client_id}' (resolved: '{resolved}'). "
+            f"Available: {[d.name for d in CLIENTS_DIR.iterdir() if d.is_dir() and not d.name.startswith('.')]}"
+        )
+    return kit_path.read_text(encoding="utf-8")
+
+
+@mcp.tool()
+def update_brandkit(client_id: str, updates_json: str) -> str:
+    """
+    Update specific fields in a client's brand kit.
+    Merges updates into existing data (does not replace the whole file).
+
+    Args:
+        client_id: Client identifier
+        updates_json: JSON string with fields to update, e.g. '{"colors": {"primary": "#FF0000"}}'
+
+    Returns:
+        Confirmation message
+    """
+    resolved = resolve_client_id(client_id)
+    kit_path = CLIENTS_DIR / resolved / "brandkit.json"
+    if not kit_path.exists():
+        raise FileNotFoundError(f"No brandkit.json found for client '{resolved}'")
+
+    existing = json.loads(kit_path.read_text(encoding="utf-8"))
+    updates = json.loads(updates_json)
+
+    def deep_merge(base: dict, overlay: dict) -> dict:
+        for key, value in overlay.items():
+            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                deep_merge(base[key], value)
+            else:
+                base[key] = value
+        return base
+
+    merged = deep_merge(existing, updates)
+    kit_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False), encoding="utf-8")
+    return f"Brand kit updated for '{resolved}' — {len(updates)} field(s) merged"
 
 
 # ─── CONTENT CALENDAR ─────────────────────────────────────────────────────────
@@ -276,7 +398,11 @@ def update_brand_vault(client_id: str, content: str) -> str:
 @mcp.tool()
 def read_calendar(client_id: str) -> str:
     """Read a client's content calendar."""
-    cal_path = CLIENTS_DIR / client_id / "calendar.md"
+    resolved = resolve_client_id(client_id)
+    cal_path = CLIENTS_DIR / resolved / "calendar.md"
+    if not cal_path.exists():
+        # Try original ID as fallback
+        cal_path = CLIENTS_DIR / client_id / "calendar.md"
     if not cal_path.exists():
         return f"No calendar found for '{client_id}'"
     return cal_path.read_text(encoding="utf-8")
@@ -285,13 +411,14 @@ def read_calendar(client_id: str) -> str:
 @mcp.tool()
 def add_to_calendar(client_id: str, entry: str) -> str:
     """Append a new entry to a client's content calendar."""
-    cal_path = CLIENTS_DIR / client_id / "calendar.md"
+    resolved = resolve_client_id(client_id)
+    cal_path = CLIENTS_DIR / resolved / "calendar.md"
     cal_path.parent.mkdir(parents=True, exist_ok=True)
     if not cal_path.exists():
-        cal_path.write_text(f"# Content Calendar — {client_id}\n\n", encoding="utf-8")
+        cal_path.write_text(f"# Content Calendar — {resolved}\n\n", encoding="utf-8")
     with cal_path.open("a", encoding="utf-8") as f:
         f.write(f"\n{entry}\n")
-    return f"Added to calendar for '{client_id}'"
+    return f"Added to calendar for '{resolved}'"
 
 
 # ─── MEMORY / CHROMADB ────────────────────────────────────────────────────────

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/usr/local/bin/openclaw gateway:*)",
+      "Bash(curl -s http://localhost:18789/health)",
+      "Bash(python3 -c \":*)",
+      "Bash(uv run python -c \":*)",
+      "Bash(python3 -m pip show crewai)",
+      "Bash(~/.local/bin/uv run:*)",
+      "Bash(grep -n \"crew.task\" /Users/mac/agency/crews/*.yaml)",
+      "Bash(rm /Users/mac/agency/memory/tasks/done/*.json)",
+      "Bash(rm /Users/mac/agency/memory/tasks/failed/*.json)",
+      "Bash(rm /Users/mac/agency/memory/tasks/pending/*.json)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

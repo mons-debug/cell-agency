@@ -1,0 +1,158 @@
+# Cell Agency — Creative Department
+# Agents: Content Creator, Brand Designer, Graphic Designer, Video Editor
+
+agents:
+  content_creator:
+    role: Digital Content Creator
+    goal: >
+      Create compelling, brand-aligned content for all platforms and formats —
+      social media captions, ad copy, blog articles, video scripts, hashtag sets,
+      and email copy. Content must drive engagement and reflect client brand voice.
+    backstory: >
+      You are a trilingual content creator (French, Arabic/Darija, English) specializing
+      in Moroccan market digital content. You write punchy social captions, persuasive
+      ad copy, and engaging long-form content. You always check brand guidelines before
+      writing and tailor content to the specific platform and audience.
+    llm: gpt-4o
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.read_brand_vault
+      - agency.read_calendar
+      - agency.write_file
+      - agency.memory_search
+      - agency.log_daily
+      - crew.discussion_log_write
+      - skill.log_run
+      - crew.task_send
+      - crew.task_list
+      - crew.task_claim
+      - crew.task_complete
+      - crew.task_reply
+
+  brand_designer:
+    role: Brand Identity Designer
+    goal: >
+      Develop brand identities, visual guidelines, and creative direction for clients.
+      Create detailed design briefs that translate brand strategy into visual execution
+      guidelines for the Graphic Designer agent.
+    backstory: >
+      You are a brand identity expert who understands visual strategy. You know how
+      to translate business values, target audience, and competitive positioning into
+      a coherent visual identity. You create detailed design briefs and creative
+      direction documents that enable precise execution.
+    llm: gpt-4o
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.read_brand_vault
+      - agency.update_brand_vault
+      - agency.write_file
+      - design.get_social_sizes
+      - crew.discussion_log_write
+      - crew.task_send
+      - crew.task_list
+      - crew.task_claim
+      - crew.task_complete
+
+  graphic_designer:
+    role: Graphic Designer
+    goal: >
+      Execute visual designs for social media, advertising, and brand assets.
+      Generate images using AI tools (Gemini/Firefly), resize and format for all
+      platforms, and ensure every visual is on-brand and professional.
+    backstory: >
+      You are an AI-powered graphic designer who creates social media graphics,
+      ad creatives, and brand assets. You work from design briefs created by the
+      Brand Designer. You know all social media format specifications and ensure
+      every image is perfectly sized and optimized for its platform.
+    llm: gpt-4o-mini
+    verbose: true
+    allow_delegation: false
+    tools:
+      - design.generate_social_image
+      - design.generate_ad_creative
+      - design.generate_logo_concept
+      - design.resize_for_platform
+      - design.add_brand_watermark
+      - design.list_client_assets
+      - design.get_social_sizes
+      - design.parse_design_brief
+      - agency.read_brand_vault
+      - crew.discussion_log_write
+      - crew.task_list
+      - crew.task_claim
+      - crew.task_complete
+      - crew.task_fail
+      - crew.task_reply
+
+  video_editor:
+    role: Video Content Specialist
+    goal: >
+      Plan, script, and coordinate video content production for Reels, TikTok,
+      and ad videos. Write video scripts, create shot lists, and coordinate with
+      video generation APIs for AI-generated video content.
+    backstory: >
+      You specialize in short-form video content for social media. You write
+      compelling video scripts optimized for vertical format (9:16), create
+      detailed shot lists for manual filming, and can generate AI video concepts
+      using available tools. You understand what makes videos perform well on
+      Instagram Reels and TikTok in the Moroccan market.
+    llm: gpt-4o-mini
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.read_brand_vault
+      - agency.write_file
+      - agency.memory_search
+      - crew.discussion_log_write
+
+tasks:
+  write_instagram_caption:
+    description: >
+      Write an Instagram caption for client "{client_id}".
+      Topic: {topic}. Post type: {post_type} (single image / carousel / reel).
+      Language: {language} (French / Arabic / Darija).
+      Include: hook, body (2–4 lines), CTA, and 15–20 relevant hashtags.
+      Load brand vault and respect tone of voice.
+    expected_output: >
+      Complete Instagram caption with: hook, body, CTA, and hashtags section.
+      Ready to copy-paste. Language as specified.
+    agent: content_creator
+
+  write_ad_copy:
+    description: >
+      Write Meta (Facebook/Instagram) ad copy for client "{client_id}".
+      Campaign goal: {goal}. Offer: {offer}. Language: {language}.
+      Write: primary text (125 chars max), headline (27 chars max), description (27 chars max).
+    expected_output: >
+      3 ad copy variations, each with: primary_text, headline, description, and CTA button text.
+    agent: content_creator
+
+  create_design_brief:
+    description: >
+      Create a detailed design brief for client "{client_id}".
+      Request: {design_request}. Load and reference the brand vault.
+    expected_output: >
+      Complete design brief (Markdown) with: goal, format, dimensions, visual style,
+      color palette, copy/text, layout notes, and references.
+    agent: brand_designer
+
+  generate_social_graphic:
+    description: >
+      Generate a social media graphic for client "{client_id}".
+      Brief: {design_brief}. Format: {format}. Engine: {engine} (gemini/firefly).
+    expected_output: >
+      Path to the generated image file.
+      Report: format used, dimensions, file path, brief compliance notes.
+    agent: graphic_designer
+
+  write_reel_script:
+    description: >
+      Write an Instagram Reel script for client "{client_id}".
+      Topic: {topic}. Duration: {duration} seconds. Language: {language}.
+      Include: hook (first 3 seconds), main content, CTA, captions for text overlays.
+    expected_output: >
+      Reel script with: scene-by-scene breakdown, voiceover/text overlay at each moment,
+      background music suggestion, and total estimated duration.
+    agent: video_editor

@@ -1,0 +1,558 @@
+# Cell Agency — Smart Routing Table
+# Single source of truth for all task routing decisions.
+#
+# Structure per route:
+#   skill:             OpenClaw skill name (matches skills/ folder)
+#   triggers.keywords: Exact phrases / words that strongly indicate this route
+#   triggers.regex:    Regex patterns for more flexible matching (Python re syntax)
+#   crew:              CrewAI crew to invoke (management|strategy|creative|dev|marketing_ops)
+#   task:              Task name within that crew's YAML
+#   agent:             Preferred agent (informational — crew YAML assigns the task)
+#   required_inputs:   Context fields that MUST be extracted before dispatching
+#   optional_inputs:   Context fields that improve output if present
+#   approval_required: Whether Moncef ✅ is needed before execution
+#   priority:          Route matching priority (higher = checked first, 1-100)
+#   confidence_floor:  Minimum keyword score to use this route without LLM fallback (0.0-1.0)
+
+routes:
+
+  # ── SOCIAL MEDIA ────────────────────────────────────────────────────────────
+
+  - skill: social-pilot
+    triggers:
+      keywords:
+        - "publish post"
+        - "post to instagram"
+        - "post on instagram"
+        - "publish this"
+        - "go live"
+        - "schedule post"
+        - "schedule this"
+        - "publish approved"
+        - "post approved"
+        - "check engagement"
+        - "check insights"
+        - "instagram stats"
+        - "delete post"
+        - "remove post"
+        - "publish to facebook"
+        - "post to facebook"
+      regex:
+        - "publish.*(post|content|image|reel|carousel)"
+        - "post.*(instagram|facebook|ig|fb)"
+        - "schedule.*(post|content|for)"
+        - "(engagement|reach|impressions|followers).*(check|pull|get|show)"
+    crew: marketing_ops
+    task: publish_approved_post
+    agent: social_media_manager
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - image_url
+      - caption
+      - scheduled_time
+    approval_required: true
+    priority: 90
+    confidence_floor: 0.4
+
+  # ── CONTENT CREATION ────────────────────────────────────────────────────────
+
+  - skill: content-forge
+    triggers:
+      keywords:
+        - "write caption"
+        - "write a caption"
+        - "create content"
+        - "write copy"
+        - "social media post"
+        - "write a post"
+        - "instagram caption"
+        - "ad copy"
+        - "write ad"
+        - "blog article"
+        - "write article"
+        - "write script"
+        - "reel script"
+        - "video script"
+        - "email copy"
+        - "write email"
+        - "newsletter"
+        - "content ideas"
+        - "content for"
+        - "write something"
+        - "write text"
+      regex:
+        - "write.*(caption|post|copy|script|article|email|content)"
+        - "create.*(caption|post|copy|content|text)"
+        - "(instagram|facebook|reel|story).*(caption|post|copy|text)"
+        - "content.*(for|about|on).*(refine|clinic|client)"
+    crew: creative
+    task: write_instagram_caption
+    agent: content_creator
+    required_inputs:
+      - client_id
+      - topic
+    optional_inputs:
+      - post_type
+      - language
+      - tone
+    approval_required: false
+    priority: 85
+    confidence_floor: 0.35
+
+  # ── AD CAMPAIGNS ─────────────────────────────────────────────────────────────
+
+  - skill: ads-cockpit
+    triggers:
+      keywords:
+        - "run ads"
+        - "create campaign"
+        - "create ad campaign"
+        - "launch campaign"
+        - "pause campaign"
+        - "activate campaign"
+        - "ad performance"
+        - "campaign performance"
+        - "campaign budget"
+        - "update budget"
+        - "advertising report"
+        - "boost post"
+        - "meta ads"
+        - "facebook ads"
+        - "google ads"
+        - "paid campaign"
+        - "ad account"
+        - "campaign results"
+        - "ad spend"
+      regex:
+        - "(create|launch|run|start|pause|stop|activate).*(campaign|ad|ads)"
+        - "(meta|facebook|google|paid).*(ad|ads|campaign|advertising)"
+        - "(campaign|ad).*(budget|spend|performance|results|insights)"
+    crew: marketing_ops
+    task: launch_ad_campaign
+    agent: ads_manager
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - campaign_name
+      - objective
+      - daily_budget_mad
+    approval_required: true
+    priority: 88
+    confidence_floor: 0.4
+
+  # ── DESIGN & VISUALS ─────────────────────────────────────────────────────────
+
+  - skill: design-brief
+    triggers:
+      keywords:
+        - "design brief"
+        - "create design"
+        - "need a graphic"
+        - "make a graphic"
+        - "social media graphic"
+        - "poster"
+        - "banner"
+        - "create visual"
+        - "generate image"
+        - "make an image"
+        - "design post"
+        - "visual for"
+        - "design for"
+        - "logo"
+        - "brand asset"
+        - "ad creative"
+        - "generate visual"
+      regex:
+        - "(create|make|generate|design|build).*(graphic|image|visual|poster|banner|logo|creative)"
+        - "(design|visual|image).*(for|brief|post|ad|campaign)"
+    crew: creative
+    task: generate_social_graphic
+    agent: graphic_designer
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - design_brief
+      - format
+      - engine
+    approval_required: false
+    priority: 80
+    confidence_floor: 0.35
+
+  # ── CALENDAR & SCHEDULING ────────────────────────────────────────────────────
+
+  - skill: calendar-brain
+    triggers:
+      keywords:
+        - "content calendar"
+        - "posting schedule"
+        - "what's scheduled"
+        - "what is scheduled"
+        - "plan posts"
+        - "upcoming posts"
+        - "add to calendar"
+        - "content plan"
+        - "this week's posts"
+        - "next week posts"
+        - "show calendar"
+        - "view calendar"
+        - "schedule content"
+        - "content for this week"
+      regex:
+        - "(show|view|check|get|read).*(calendar|schedule|plan)"
+        - "(add|plan|schedule).*(calendar|post|content)"
+        - "(this|next).*(week|month).*(post|content|schedule)"
+    crew: strategy
+    task: create_campaign_strategy
+    agent: campaign_strategist
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - week
+      - month
+    approval_required: false
+    priority: 75
+    confidence_floor: 0.35
+
+  # ── REPORTING ────────────────────────────────────────────────────────────────
+
+  - skill: report-builder
+    triggers:
+      keywords:
+        - "generate report"
+        - "weekly report"
+        - "monthly report"
+        - "performance report"
+        - "how are we doing"
+        - "send report"
+        - "analytics report"
+        - "marketing report"
+        - "results report"
+        - "client report"
+        - "what are the numbers"
+        - "show me the stats"
+        - "performance summary"
+      regex:
+        - "(generate|create|make|build|send).*(report|summary|overview)"
+        - "(weekly|monthly|daily|campaign).*(report|summary|performance)"
+        - "(how|what).*(perform|doing|result|stat|number|metric)"
+    crew: marketing_ops
+    task: generate_full_report
+    agent: reporting_agent
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - period
+      - month
+    approval_required: false
+    priority: 78
+    confidence_floor: 0.35
+
+  # ── SEO ──────────────────────────────────────────────────────────────────────
+
+  - skill: seo-radar
+    triggers:
+      keywords:
+        - "seo"
+        - "keywords"
+        - "search rankings"
+        - "local seo"
+        - "google my business"
+        - "rank on google"
+        - "keyword research"
+        - "seo audit"
+        - "google ranking"
+        - "organic traffic"
+        - "search visibility"
+        - "competitor seo"
+      regex:
+        - "seo.*(research|audit|analysis|report|strategy)"
+        - "(keyword|search|google|organic).*(research|ranking|traffic|visibility)"
+        - "(rank|ranking).*(google|search|organic)"
+    crew: strategy
+    task: keyword_research
+    agent: seo_specialist
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - industry
+      - location
+    approval_required: false
+    priority: 72
+    confidence_floor: 0.4
+
+  # ── MARKET RESEARCH ──────────────────────────────────────────────────────────
+
+  - skill: seo-radar
+    triggers:
+      keywords:
+        - "market research"
+        - "competitor research"
+        - "competitor analysis"
+        - "research competitors"
+        - "who are the competitors"
+        - "market analysis"
+        - "industry research"
+        - "research the market"
+        - "what are competitors doing"
+        - "spy on competitors"
+      regex:
+        - "(market|competitor|industry).*(research|analysis|study|report)"
+        - "(research|analyze|study).*(market|competitor|industry|competition)"
+    crew: strategy
+    task: market_research
+    agent: research_analyst
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - industry
+      - location
+    approval_required: false
+    priority: 70
+    confidence_floor: 0.35
+
+  # ── CLIENT MANAGEMENT ────────────────────────────────────────────────────────
+
+  - skill: client-pulse
+    triggers:
+      keywords:
+        - "client status"
+        - "how is refine"
+        - "client update"
+        - "send update to client"
+        - "client relationship"
+        - "check in with client"
+        - "message the client"
+        - "whatsapp client"
+        - "client communication"
+        - "draft update"
+        - "client message"
+      regex:
+        - "(send|draft|write).*(update|message|whatsapp).*(client|refine)"
+        - "(client|refine).*(status|update|message|communication)"
+        - "(how is|check on).*(client|refine)"
+    crew: marketing_ops
+    task: draft_client_update
+    agent: client_manager
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - period
+      - achievements
+      - upcoming
+    approval_required: true
+    priority: 68
+    confidence_floor: 0.35
+
+  # ── CLIENT REGISTRY ──────────────────────────────────────────────────────────
+
+  - skill: client-registry
+    triggers:
+      keywords:
+        - "add client"
+        - "new client"
+        - "onboard client"
+        - "list clients"
+        - "show clients"
+        - "client info"
+        - "client details"
+        - "create client"
+        - "register client"
+      regex:
+        - "(add|create|register|onboard).*(client|account)"
+        - "(list|show|get).*(client|clients|accounts)"
+        - "(client|account).*(info|details|profile)"
+    crew: marketing_ops
+    task: draft_client_update
+    agent: client_manager
+    required_inputs: []
+    optional_inputs:
+      - client_id
+      - client_name
+      - industry
+      - location
+    approval_required: false
+    priority: 65
+    confidence_floor: 0.4
+
+  # ── BRAND VAULT ──────────────────────────────────────────────────────────────
+
+  - skill: brand-vault
+    triggers:
+      keywords:
+        - "brand guidelines"
+        - "brand vault"
+        - "brand colors"
+        - "tone of voice"
+        - "client brand"
+        - "brand assets"
+        - "brand identity"
+        - "update brand"
+        - "brand profile"
+        - "color palette"
+        - "typography"
+      regex:
+        - "(brand|identity).*(guideline|vault|color|tone|font|asset)"
+        - "(update|read|show|get).*(brand|brand vault|guidelines)"
+    crew: management
+    task: route_task
+    agent: nadia
+    required_inputs:
+      - client_id
+    optional_inputs: []
+    approval_required: false
+    priority: 60
+    confidence_floor: 0.4
+
+  # ── EMAIL MARKETING ──────────────────────────────────────────────────────────
+
+  - skill: email-engine
+    triggers:
+      keywords:
+        - "email campaign"
+        - "newsletter"
+        - "send email"
+        - "email marketing"
+        - "welcome email"
+        - "email sequence"
+        - "promotional email"
+        - "email list"
+        - "email copy"
+        - "drip campaign"
+      regex:
+        - "(email|newsletter).*(campaign|marketing|sequence|copy|list)"
+        - "(send|write|create|design).*(email|newsletter)"
+    crew: marketing_ops
+    task: generate_full_report
+    agent: email_marketer
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - campaign_type
+      - language
+    approval_required: true
+    priority: 70
+    confidence_floor: 0.4
+
+  # ── LEAD GENERATION ──────────────────────────────────────────────────────────
+
+  - skill: lead-hunter
+    triggers:
+      keywords:
+        - "find leads"
+        - "new clients"
+        - "prospect research"
+        - "lead generation"
+        - "find businesses"
+        - "outreach"
+        - "potential clients"
+        - "find prospects"
+        - "new business"
+        - "business opportunities"
+        - "grow the agency"
+      regex:
+        - "(find|search|research|get).*(lead|prospect|client|business)"
+        - "(lead|prospect).*(generation|research|list|outreach)"
+        - "(new|potential).*(client|business|customer|prospect)"
+    crew: marketing_ops
+    task: generate_full_report
+    agent: lead_gen_specialist
+    required_inputs: []
+    optional_inputs:
+      - industry
+      - location
+      - budget_range
+    approval_required: false
+    priority: 65
+    confidence_floor: 0.35
+
+  # ── AUDIENCE ANALYSIS ────────────────────────────────────────────────────────
+
+  - skill: seo-radar
+    triggers:
+      keywords:
+        - "audience analysis"
+        - "target audience"
+        - "audience persona"
+        - "who is our audience"
+        - "audience insights"
+        - "audience research"
+        - "customer profile"
+        - "build persona"
+      regex:
+        - "(audience|persona|customer).*(analysis|research|profile|insight)"
+        - "(target|build|create).*(audience|persona|profile)"
+    crew: strategy
+    task: audience_persona
+    agent: audience_analyst
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - industry
+      - location
+    approval_required: false
+    priority: 68
+    confidence_floor: 0.35
+
+  # ── CAMPAIGN STRATEGY ────────────────────────────────────────────────────────
+
+  - skill: calendar-brain
+    triggers:
+      keywords:
+        - "campaign strategy"
+        - "marketing strategy"
+        - "plan a campaign"
+        - "launch strategy"
+        - "campaign plan"
+        - "marketing plan"
+        - "content strategy"
+        - "growth strategy"
+        - "spring campaign"
+        - "ramadan campaign"
+        - "promotion strategy"
+      regex:
+        - "(campaign|marketing|content|growth).*(strategy|plan|planning)"
+        - "(plan|create|build|design).*(campaign|strategy|launch)"
+    crew: strategy
+    task: create_campaign_strategy
+    agent: campaign_strategist
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - goal
+      - duration
+      - budget
+    approval_required: false
+    priority: 73
+    confidence_floor: 0.35
+
+  # ── WEEKLY ANALYTICS ─────────────────────────────────────────────────────────
+
+  - skill: report-builder
+    triggers:
+      keywords:
+        - "weekly analytics"
+        - "weekly numbers"
+        - "this week stats"
+        - "weekly performance"
+        - "7 day performance"
+        - "last 7 days"
+        - "week overview"
+      regex:
+        - "(weekly|week|7.day).*(analytics|stat|number|metric|performance)"
+    crew: marketing_ops
+    task: generate_weekly_analytics
+    agent: analytics_agent
+    required_inputs:
+      - client_id
+    optional_inputs: []
+    approval_required: false
+    priority: 79
+    confidence_floor: 0.4
+
+# Default fallback when no route matches
+fallback:
+  crew: management
+  task: route_task
+  agent: nadia
+  message: "No matching route found — escalating to Nadia for manual routing."

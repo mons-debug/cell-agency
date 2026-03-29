@@ -1,0 +1,287 @@
+# Cell Agency — File Permission System
+# Per-agent file access control list (ACL).
+#
+# Rules are evaluated top-to-bottom per agent.
+# First matching rule wins.
+# Default: DENY if no rule matches.
+#
+# Pattern syntax (glob-style):
+#   clients/*/brand_vault.md     — specific file in any client
+#   clients/refine-clinic/**     — everything under refine-clinic
+#   clients/**                   — everything under any client
+#   memory/**                    — everything in memory
+#   **                           — everything (management only)
+#
+# Operations: read | write | append | delete | create_dir
+# "write" implicitly includes "append" and "create_dir" unless overridden.
+#
+# Special groups:
+#   _all_ops: [read, write, append, delete, create_dir]
+#   _read_only: [read]
+#   _write_ops: [write, append, create_dir]
+#
+# Last updated: 2026-03-29
+
+# ── Default policy ─────────────────────────────────────────────────────────────
+default_policy: deny          # deny anything not explicitly listed
+log_denied: true              # log all denied access attempts to memory/denied_access.log
+log_granted: false            # set true for full audit trail
+
+# ── Agent permissions ─────────────────────────────────────────────────────────
+agents:
+
+  # Management — broad access, directors see everything
+
+  nadia:
+    description: Agency Director — full read, scoped write
+    rules:
+      - path: "clients/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, write, append]
+      - path: "skills/**"
+        ops: [read]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+
+  router:
+    description: Task Classifier — read-only brand and client list
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/**"
+        ops: [read]
+
+  qa_gate:
+    description: QA Director — reads everything, writes only QA artifacts
+    rules:
+      - path: "clients/**"
+        ops: [read]
+      - path: "clients/*/qa/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, append]
+
+  # Strategy — read brand/calendar, write reports and research
+
+  research_analyst:
+    description: Market Research — web research, write reports to memory and client folders
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/research/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, write, append]
+
+  campaign_strategist:
+    description: Campaign Strategist — reads brand/calendar, writes strategy docs and calendar entries
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/calendar.md"
+        ops: [read, write, append]
+      - path: "clients/*/campaigns/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/strategy/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read]
+
+  seo_specialist:
+    description: SEO Specialist — reads brand, writes SEO reports
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/seo/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, write, append]
+
+  audience_analyst:
+    description: Audience Analyst — reads brand/social data, writes persona docs
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/audience/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read]
+
+  # Creative — reads brand, writes content only (cannot touch brand_vault or reports)
+
+  content_creator:
+    description: Content Creator — reads brand/calendar, writes content files only
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/calendar.md"
+        ops: [read]
+      - path: "clients/*/content/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/posts/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read]
+
+  brand_designer:
+    description: Brand Designer — can update brand_vault, writes design docs
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read, write]
+      - path: "clients/*/design/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/assets/**"
+        ops: [read, create_dir]
+
+  graphic_designer:
+    description: Graphic Designer — reads brand, writes assets only
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/assets/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/design/**"
+        ops: [read]
+
+  video_editor:
+    description: Video Editor — reads brand, writes scripts and video assets
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/content/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/video/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read]
+
+  # Development — writes code to web/ dirs, reads brand
+
+  frontend_developer:
+    description: Frontend Developer — writes to web/ subdirs, reads brand
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/web/**"
+        ops: [read, write, append, delete, create_dir]
+      - path: "clients/*/assets/**"
+        ops: [read]
+
+  backend_developer:
+    description: Backend Developer — writes to api/ and web/ subdirs
+    rules:
+      - path: "clients/*/api/**"
+        ops: [read, write, append, delete, create_dir]
+      - path: "clients/*/web/**"
+        ops: [read, write, append, delete, create_dir]
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+
+  devops_agent:
+    description: DevOps — reads configs, writes deploy logs
+    rules:
+      - path: "clients/**"
+        ops: [read]
+      - path: "clients/*/deploy/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, append]
+
+  tool_engineer:
+    description: Tool Engineer — full access to agency system files for maintenance
+    rules:
+      - path: "clients/**"
+        ops: [read]
+      - path: "memory/**"
+        ops: [read, write, append]
+      - path: "skills/**"
+        ops: [read, write, append, create_dir]
+
+  # Marketing Ops — scoped to their functional areas
+
+  ads_manager:
+    description: Ads Manager — reads brand, writes campaign files
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/campaigns/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, append]
+
+  social_media_manager:
+    description: Social Media Manager — reads calendar/brand, writes post logs
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/calendar.md"
+        ops: [read, write, append]
+      - path: "clients/*/posts/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, append]
+
+  analytics_agent:
+    description: Analytics Agent — reads everything, writes analytics and reports
+    rules:
+      - path: "clients/**"
+        ops: [read]
+      - path: "clients/*/analytics/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, write, append]
+
+  client_manager:
+    description: Client Manager — reads all client info, writes comms and project files
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/**"
+        ops: [read]
+      - path: "clients/*/comms/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/projects/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, append]
+
+  email_marketer:
+    description: Email Marketer — reads brand, writes email content only
+    rules:
+      - path: "clients/*/brand_vault.md"
+        ops: [read]
+      - path: "clients/*/email/**"
+        ops: [read, write, append, create_dir]
+      - path: "clients/*/content/**"
+        ops: [read]
+      - path: "memory/**"
+        ops: [read]
+
+  lead_gen_specialist:
+    description: Lead Gen — reads nothing sensitive, writes prospects only
+    rules:
+      - path: "clients/*/prospects/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read, write, append]
+
+  reporting_agent:
+    description: Reporting Agent — reads all data, writes reports only
+    rules:
+      - path: "clients/**"
+        ops: [read]
+      - path: "clients/*/reports/**"
+        ops: [read, write, append, create_dir]
+      - path: "memory/**"
+        ops: [read]

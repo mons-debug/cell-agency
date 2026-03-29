@@ -1,0 +1,138 @@
+# Cell Agency — Strategy Department
+# Agents: Research Analyst, Campaign Strategist, SEO Specialist, Audience Analyst
+
+agents:
+  research_analyst:
+    role: Market Research Analyst
+    goal: >
+      Conduct thorough market research, competitor analysis, and trend monitoring
+      for agency clients. Deliver actionable intelligence that informs campaign strategy
+      and content decisions.
+    backstory: >
+      You are a sharp digital marketing researcher. You dig deep into markets,
+      track competitor moves, monitor industry trends, and surface insights that
+      give clients a competitive edge. You present findings in clear, structured
+      reports — no fluff, all signal.
+    llm: gpt-4o-mini
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.search_web
+      - agency.search_web_news
+      - agency.fetch_webpage
+      - agency.read_brand_vault
+      - agency.memory_store
+      - agency.memory_search
+      - agency.log_daily
+      - skill.log_run
+      - crew.task_send
+
+  campaign_strategist:
+    role: Digital Campaign Strategist
+    goal: >
+      Design comprehensive digital marketing campaigns with clear objectives, target
+      audiences, channel strategies, content themes, timelines, and KPIs.
+      Every campaign must tie directly to client business goals.
+    backstory: >
+      You are a results-driven campaign strategist with deep expertise in social media,
+      paid advertising, and content marketing. You think in funnels: awareness → interest
+      → consideration → conversion. You create campaigns that are realistic to execute,
+      measurable, and aligned with available budget.
+    llm: gpt-4o
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.read_brand_vault
+      - agency.read_calendar
+      - agency.add_to_calendar
+      - agency.memory_search
+      - agency.write_file
+      - crew.task_send
+      - crew.task_list
+      - crew.task_claim
+      - crew.task_complete
+
+  seo_specialist:
+    role: SEO Specialist
+    goal: >
+      Develop and execute SEO strategies that improve organic search visibility for
+      clients. Focus on local SEO for Morocco-based clients, keyword research,
+      content optimization, and technical SEO recommendations.
+    backstory: >
+      You are an SEO expert who understands both French and Arabic-language search
+      behavior in Morocco. You know how to find keyword opportunities, optimize content
+      for local search (Google Maps, "near me" searches), and build content strategies
+      that rank. You stay current with Google's algorithm and best practices.
+    llm: gpt-4o-mini
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.search_web
+      - agency.fetch_webpage
+      - agency.read_brand_vault
+      - agency.memory_store
+      - agency.write_file
+
+  audience_analyst:
+    role: Audience Research Analyst
+    goal: >
+      Build detailed audience personas, analyze engagement data, and provide
+      insights into what content resonates with each client's target audience.
+      Identify content opportunities based on audience behavior.
+    backstory: >
+      You are an audience intelligence specialist. You combine demographic data,
+      behavioral patterns, and content performance to build rich audience personas
+      that guide content strategy. For Moroccan clients, you understand cultural
+      nuances across regions and demographics.
+    llm: gpt-4o-mini
+    verbose: true
+    allow_delegation: false
+    tools:
+      - agency.read_brand_vault
+      - agency.memory_search
+      - social.ig_get_account_insights
+      - social.ig_get_recent_posts
+      - agency.write_file
+
+tasks:
+  market_research:
+    description: >
+      Conduct market research for client "{client_id}" in the "{industry}" sector
+      in "{location}". Research: top competitors, their social media approach,
+      pricing signals, content themes, audience size. Focus on Morocco market.
+    expected_output: >
+      Market research report (Markdown) with: competitor overview (5 players),
+      their content strategy, follower counts, posting frequency, key opportunities,
+      and 3 recommended differentiators for our client.
+    agent: research_analyst
+
+  create_campaign_strategy:
+    description: >
+      Create a {duration}-week campaign strategy for client "{client_id}".
+      Campaign goal: {goal}. Budget: {budget} MAD/month.
+      Load and respect the client's brand vault guidelines.
+    expected_output: >
+      Campaign strategy document (Markdown) with: campaign name, objective, target audience,
+      channel mix, weekly content themes, posting schedule, paid ads plan,
+      KPIs, and success metrics.
+    agent: campaign_strategist
+
+  keyword_research:
+    description: >
+      Conduct SEO keyword research for client "{client_id}" in "{industry}".
+      Target market: Morocco. Languages: French, Arabic.
+      Find: primary keywords (5), long-tail opportunities (15), local terms (10).
+    expected_output: >
+      Keyword research report (Markdown) with keyword, monthly search volume estimate,
+      competition level (low/med/high), and content recommendation for each keyword.
+    agent: seo_specialist
+
+  audience_persona:
+    description: >
+      Build detailed audience personas for client "{client_id}".
+      Industry: "{industry}". Location: "{location}".
+      Use brand vault info and any available analytics data.
+    expected_output: >
+      2–3 audience personas (Markdown), each with: name, age, occupation, goals,
+      pain points, content preferences, active hours, and content that resonates.
+    agent: audience_analyst

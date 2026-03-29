@@ -1,0 +1,798 @@
+# Cell Agency — Agent Capability Registry
+# Single source of truth for all 22 agents.
+# Used by: routing engine, Nadia (director), QA gate, MCP tools, planning.
+#
+# Query this registry to answer:
+#   - "Which agent handles X task?"
+#   - "What tools does agent X have?"
+#   - "Which agents are in department Y?"
+#   - "Which agents require approval before acting?"
+#   - "What inputs does agent X need?"
+#
+# Update this file whenever an agent is added, modified, or removed.
+# Last updated: 2026-03-28
+
+meta:
+  total_agents: 22
+  departments: [management, strategy, creative, dev, marketing_ops]
+  llm_map:
+    gpt-4o: claude-sonnet-4-6
+    gpt-4o-mini: claude-haiku-4-5-20251001
+
+agents:
+
+  # ── MANAGEMENT ──────────────────────────────────────────────────────────────
+
+  - id: nadia
+    role: Agency Director
+    department: management
+    crew_file: crews/management_crew.yaml
+    llm: gpt-4o
+    allow_delegation: true
+    approval_required: false
+    description: >
+      Orchestrates all agency operations. Routes tasks to specialists,
+      reviews quality, and is the single point of contact with Moncef.
+      Reads SOUL.md, USER.md, MEMORY.md every session.
+    capabilities:
+      - orchestrate_agency_operations
+      - route_tasks_to_specialists
+      - review_deliverables
+      - communicate_with_moncef
+      - manage_approval_queue
+      - track_project_status
+      - read_daily_briefings
+    handles_tasks:
+      - any_unrouted_task
+      - escalations
+      - approval_decisions
+      - morning_briefing
+      - evening_summary
+    tools:
+      - agency.read_brand_vault
+      - agency.list_clients
+      - agency.search_memory
+      - agency.log_daily
+      - agency.read_calendar
+      - agency.read_daily_log
+      - agency.memory_get
+      - crew.approval_queue_list
+      - crew.approval_queue_resolve
+      - crew.get_project_status
+      - crew.discussion_log_read
+    input_needs:
+      required: []
+      optional: [client_id, task_description]
+    output_formats: [markdown, json, telegram_message]
+    languages: [fr, ar, darija, en]
+
+  - id: router
+    role: Task Classifier and Dispatcher
+    department: management
+    crew_file: crews/management_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: true
+    approval_required: false
+    description: >
+      Classifies incoming messages using the smart routing engine.
+      Calls agency.route_message first; uses LLM judgment only for
+      low-confidence cases. Returns a complete routing JSON.
+    capabilities:
+      - classify_incoming_messages
+      - extract_context_from_messages
+      - route_to_correct_agent
+      - identify_missing_inputs
+    handles_tasks:
+      - route_task
+    tools:
+      - agency.route_message
+      - agency.explain_routing
+      - agency.list_clients
+      - agency.read_brand_vault
+    input_needs:
+      required: [task_description]
+      optional: [client_id]
+    output_formats: [json]
+    languages: [fr, ar, darija, en]
+
+  - id: qa_gate
+    role: Quality Assurance Director
+    department: management
+    crew_file: crews/management_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Reviews all content and deliverables before they reach Moncef or
+      the client. Checks brand compliance, language quality, factual
+      accuracy, CTA clarity, and legal/sensitivity issues. Scores 1-10.
+    capabilities:
+      - review_content_brand_compliance
+      - check_language_grammar
+      - verify_factual_accuracy
+      - validate_cta_presence
+      - flag_sensitivity_issues
+      - score_deliverables
+      - add_to_approval_queue
+    handles_tasks:
+      - qa_review
+    tools:
+      - agency.read_brand_vault
+      - crew.approval_queue_add
+      - crew.discussion_log_read
+    input_needs:
+      required: [content_to_review, client_id]
+      optional: [brand_guidelines]
+    output_formats: [qa_report]
+    languages: [fr, ar, darija, en]
+
+  # ── STRATEGY ────────────────────────────────────────────────────────────────
+
+  - id: research_analyst
+    role: Market Research Analyst
+    department: strategy
+    crew_file: crews/strategy_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Conducts market research, competitor analysis, and trend monitoring.
+      Delivers structured intelligence reports with actionable insights.
+    capabilities:
+      - market_research
+      - competitor_analysis
+      - trend_monitoring
+      - web_research
+      - news_monitoring
+      - store_research_in_memory
+    handles_tasks:
+      - market_research
+    tools:
+      - agency.search_web
+      - agency.search_web_news
+      - agency.fetch_webpage
+      - agency.read_brand_vault
+      - agency.memory_store
+      - agency.memory_search
+      - agency.log_daily
+    input_needs:
+      required: [client_id, industry]
+      optional: [location, competitors, focus_area]
+    output_formats: [markdown_report]
+    languages: [fr, ar, en]
+
+  - id: campaign_strategist
+    role: Digital Campaign Strategist
+    department: strategy
+    crew_file: crews/strategy_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Designs comprehensive digital marketing campaigns with objectives,
+      audience targeting, channel mix, content themes, timelines, and KPIs.
+    capabilities:
+      - campaign_planning
+      - funnel_design
+      - content_theme_planning
+      - kpi_definition
+      - calendar_population
+      - budget_allocation_planning
+    handles_tasks:
+      - create_campaign_strategy
+    tools:
+      - agency.read_brand_vault
+      - agency.read_calendar
+      - agency.add_to_calendar
+      - agency.memory_search
+      - agency.write_file
+    input_needs:
+      required: [client_id, goal]
+      optional: [duration, budget, season, target_audience]
+    output_formats: [markdown_report, calendar_entries]
+    languages: [fr, ar, en]
+
+  - id: seo_specialist
+    role: SEO Specialist
+    department: strategy
+    crew_file: crews/strategy_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Develops SEO strategies for Morocco-based clients. Keyword research
+      in French and Arabic, local SEO (Google Maps, "near me"), competitor
+      SEO analysis, and content optimization recommendations.
+    capabilities:
+      - keyword_research
+      - local_seo_morocco
+      - competitor_seo_analysis
+      - content_optimization
+      - technical_seo_audit
+      - google_business_profile_advice
+    handles_tasks:
+      - keyword_research
+    tools:
+      - agency.search_web
+      - agency.fetch_webpage
+      - agency.read_brand_vault
+      - agency.memory_store
+      - agency.write_file
+    input_needs:
+      required: [client_id, industry]
+      optional: [location, language, focus_keywords]
+    output_formats: [keyword_report, markdown_report]
+    languages: [fr, ar]
+
+  - id: audience_analyst
+    role: Audience Research Analyst
+    department: strategy
+    crew_file: crews/strategy_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Builds audience personas using demographic data, behavioral patterns,
+      and content performance. Combines analytics data with cultural insights
+      for the Moroccan market.
+    capabilities:
+      - audience_persona_creation
+      - engagement_analysis
+      - content_performance_review
+      - cultural_insight_morocco
+      - instagram_analytics_pull
+    handles_tasks:
+      - audience_persona
+    tools:
+      - agency.read_brand_vault
+      - agency.memory_search
+      - social.ig_get_account_insights
+      - social.ig_get_recent_posts
+      - agency.write_file
+    input_needs:
+      required: [client_id]
+      optional: [industry, location, date_range]
+    output_formats: [persona_document, markdown_report]
+    env_required: [INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_BUSINESS_ACCOUNT_ID]
+    languages: [fr, ar, darija]
+
+  # ── CREATIVE ────────────────────────────────────────────────────────────────
+
+  - id: content_creator
+    role: Digital Content Creator
+    department: creative
+    crew_file: crews/creative_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Creates brand-aligned content for all platforms. Trilingual (FR/AR/Darija).
+      Specializes in Instagram captions, ad copy, articles, video scripts,
+      email copy, and hashtag sets for the Moroccan market.
+    capabilities:
+      - instagram_caption_writing
+      - ad_copy_writing
+      - blog_article_writing
+      - video_script_writing
+      - email_copy_writing
+      - hashtag_generation
+      - multilingual_content_fr_ar_darija
+    handles_tasks:
+      - write_instagram_caption
+      - write_ad_copy
+    tools:
+      - agency.read_brand_vault
+      - agency.read_calendar
+      - agency.write_file
+      - agency.memory_search
+      - agency.log_daily
+      - crew.discussion_log_write
+    input_needs:
+      required: [client_id, topic]
+      optional: [post_type, language, tone, platform, word_limit]
+    output_formats: [caption, ad_copy, article, script, email]
+    languages: [fr, ar, darija, en]
+    quality_rules:
+      - no_exaggerated_medical_claims
+      - clear_cta_required
+      - hashtags_at_bottom
+      - max_2_to_4_emojis
+      - must_pass_qa_gate
+
+  - id: brand_designer
+    role: Brand Identity Designer
+    department: creative
+    crew_file: crews/creative_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Develops brand identities and visual guidelines. Creates detailed
+      design briefs for the graphic designer. Translates brand strategy
+      into visual execution standards.
+    capabilities:
+      - brand_identity_development
+      - visual_guideline_creation
+      - design_brief_writing
+      - brand_vault_management
+      - creative_direction
+    handles_tasks:
+      - create_design_brief
+    tools:
+      - agency.read_brand_vault
+      - agency.update_brand_vault
+      - agency.write_file
+      - design.get_social_sizes
+      - crew.discussion_log_write
+    input_needs:
+      required: [client_id, design_request]
+      optional: [style_preference, reference_brands, color_direction]
+    output_formats: [design_brief, brand_guidelines]
+    languages: [fr, en]
+
+  - id: graphic_designer
+    role: Graphic Designer
+    department: creative
+    crew_file: crews/creative_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Executes visual designs using AI (Gemini/Firefly). Creates social
+      graphics, ad creatives, and brand assets. Handles all platform
+      sizing and formatting. Works from brand_designer briefs.
+    capabilities:
+      - ai_image_generation_gemini
+      - ai_image_generation_firefly
+      - social_media_graphic_creation
+      - ad_creative_generation
+      - logo_concept_generation
+      - image_resizing_all_platforms
+      - watermark_application
+      - asset_management
+    handles_tasks:
+      - generate_social_graphic
+    tools:
+      - design.generate_social_image
+      - design.generate_ad_creative
+      - design.generate_logo_concept
+      - design.resize_for_platform
+      - design.add_brand_watermark
+      - design.list_client_assets
+      - design.get_social_sizes
+      - design.parse_design_brief
+      - agency.read_brand_vault
+      - crew.discussion_log_write
+    input_needs:
+      required: [client_id]
+      optional: [design_brief, format, engine, filename]
+    output_formats: [image_file_path]
+    env_required: [GEMINI_API_KEY]
+    env_optional: [ADOBE_FIREFLY_CLIENT_ID, ADOBE_FIREFLY_CLIENT_SECRET]
+    languages: [en]
+
+  - id: video_editor
+    role: Video Content Specialist
+    department: creative
+    crew_file: crews/creative_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Plans and scripts video content (Reels, TikTok, ad videos).
+      Writes scripts for vertical 9:16 format, creates shot lists,
+      and coordinates AI video concept generation.
+    capabilities:
+      - reel_script_writing
+      - tiktok_script_writing
+      - shot_list_creation
+      - video_concept_development
+      - voiceover_script_writing
+    handles_tasks:
+      - write_reel_script
+    tools:
+      - agency.read_brand_vault
+      - agency.write_file
+      - agency.memory_search
+      - crew.discussion_log_write
+    input_needs:
+      required: [client_id, topic, duration]
+      optional: [language, style, music_mood]
+    output_formats: [video_script, shot_list]
+    languages: [fr, ar, darija]
+
+  # ── DEVELOPMENT ─────────────────────────────────────────────────────────────
+
+  - id: frontend_developer
+    role: Frontend Developer
+    department: dev
+    crew_file: crews/dev_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Builds fast, mobile-first landing pages and web UIs for clients.
+      React/Next.js for dynamic pages, clean HTML/CSS for simple sites.
+      Deploys to Vercel automatically.
+    capabilities:
+      - react_nextjs_development
+      - landing_page_creation
+      - responsive_mobile_first_design
+      - vercel_deployment
+      - performance_optimization
+    handles_tasks:
+      - build_landing_page
+      - deploy_frontend
+    tools:
+      - agency.read_brand_vault
+      - agency.write_file
+      - agency.create_dir
+      - deploy.deploy_to_vercel
+      - deploy.check_vercel_deployment
+    input_needs:
+      required: [client_id]
+      optional: [page_type, sections, tech_stack]
+    output_formats: [code_files, deployment_url]
+    env_required: [VERCEL_TOKEN]
+    languages: [en]
+
+  - id: backend_developer
+    role: Backend Developer
+    department: dev
+    crew_file: crews/dev_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Builds APIs, integrations, and server-side functionality.
+      Python (FastAPI) and Node.js. Webhook handlers, form backends,
+      booking integrations, and data pipelines.
+    capabilities:
+      - fastapi_development
+      - nodejs_development
+      - webhook_handler_creation
+      - api_design
+      - database_schema_design
+      - python_scripting
+    handles_tasks:
+      - build_api
+      - build_integration
+    tools:
+      - agency.write_file
+      - agency.create_dir
+      - agency.run_python
+      - deploy.deploy_to_vercel
+    input_needs:
+      required: [client_id]
+      optional: [api_spec, integration_type, database]
+    output_formats: [code_files, api_documentation]
+    env_required: [VERCEL_TOKEN]
+    languages: [en]
+
+  - id: devops_agent
+    role: DevOps and Deployment Engineer
+    department: dev
+    crew_file: crews/dev_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Handles deployment, hosting, domains, SSL, and infrastructure.
+      Deploys to Vercel and Cloudflare Pages. Monitors deployment health.
+    capabilities:
+      - vercel_deployment
+      - cloudflare_deployment
+      - domain_configuration
+      - ssl_management
+      - deployment_health_monitoring
+      - infrastructure_setup
+    handles_tasks:
+      - deploy_project
+      - configure_infrastructure
+    tools:
+      - deploy.deploy_to_vercel
+      - deploy.check_vercel_deployment
+      - deploy.deploy_to_cloudflare_pages
+      - agency.run_python
+    input_needs:
+      required: [project_dir]
+      optional: [domain, environment, prod]
+    output_formats: [deployment_url, status_report]
+    env_required: [VERCEL_TOKEN, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID]
+    languages: [en]
+
+  - id: tool_engineer
+    role: MCP Tool Engineer
+    department: dev
+    crew_file: crews/dev_crew.yaml
+    llm: gpt-4o
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Builds and maintains the 4 MCP servers that power the agency.
+      When an agent needs a capability that doesn't exist, designs and
+      implements the MCP tool. Keeps tools/TOOL_LIBRARY.md updated.
+    capabilities:
+      - mcp_tool_development
+      - fastmcp_server_maintenance
+      - tool_library_management
+      - python_tool_implementation
+      - integration_development
+    handles_tasks:
+      - build_mcp_tool
+      - maintain_mcp_server
+    tools:
+      - agency.write_file
+      - agency.read_file
+      - agency.run_python
+      - agency.list_dir
+    input_needs:
+      required: [tool_spec]
+      optional: [target_server, test_cases]
+    output_formats: [python_code, tool_documentation]
+    languages: [en]
+
+  # ── MARKETING OPS ────────────────────────────────────────────────────────────
+
+  - id: ads_manager
+    role: Paid Advertising Manager
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: true
+    approval_triggers:
+      - campaign_launch
+      - budget_change_over_100_mad
+      - campaign_activation
+    description: >
+      Manages all paid advertising on Meta and Google Ads. Creates,
+      launches, optimizes, and reports on campaigns. Specializes in
+      Moroccan market targeting (Tanger, Casablanca, Rabat).
+    capabilities:
+      - meta_campaign_creation
+      - meta_campaign_management
+      - meta_budget_optimization
+      - meta_performance_reporting
+      - google_ads_management_stub
+      - audience_targeting_morocco
+    handles_tasks:
+      - launch_ad_campaign
+    tools:
+      - ads.meta_list_campaigns
+      - ads.meta_create_campaign
+      - ads.meta_pause_campaign
+      - ads.meta_activate_campaign
+      - ads.meta_update_budget
+      - ads.meta_get_campaign_insights
+      - ads.meta_get_ad_account_overview
+      - ads.meta_list_ad_sets
+      - ads.generate_ads_performance_summary
+      - agency.read_brand_vault
+      - agency.log_daily
+    input_needs:
+      required: [client_id]
+      optional: [campaign_name, objective, daily_budget_mad, status]
+    output_formats: [campaign_summary, performance_report]
+    env_required: [META_ACCESS_TOKEN, META_AD_ACCOUNT_ID]
+    languages: [fr, en]
+
+  - id: social_media_manager
+    role: Social Media Manager
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: true
+    approval_triggers:
+      - all_publishing_actions
+    description: >
+      Manages day-to-day social media publishing. Posts approved content
+      to Instagram and Facebook, schedules posts, and monitors engagement.
+      Never publishes without Moncef ✅ approval.
+    capabilities:
+      - instagram_image_posting
+      - instagram_carousel_posting
+      - instagram_post_scheduling
+      - facebook_page_posting
+      - engagement_monitoring
+      - calendar_management
+      - post_deletion
+    handles_tasks:
+      - publish_approved_post
+    tools:
+      - social.ig_create_image_post
+      - social.ig_create_carousel_post
+      - social.ig_schedule_post
+      - social.ig_get_recent_posts
+      - social.ig_get_account_insights
+      - social.ig_delete_post
+      - social.fb_post_to_page
+      - social.fb_get_page_insights
+      - agency.read_calendar
+      - agency.add_to_calendar
+      - agency.log_daily
+    input_needs:
+      required: [client_id, image_url, caption]
+      optional: [scheduled_time, location_id]
+    output_formats: [post_confirmation, engagement_report]
+    env_required:
+      - INSTAGRAM_ACCESS_TOKEN
+      - INSTAGRAM_BUSINESS_ACCOUNT_ID
+      - FACEBOOK_ACCESS_TOKEN
+      - FACEBOOK_PAGE_ID
+    languages: [fr, ar, darija]
+
+  - id: analytics_agent
+    role: Marketing Analytics Specialist
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Tracks and reports on all marketing performance metrics. Pulls data
+      from Instagram, Facebook, and Meta Ads. Provides structured insights
+      with trend analysis and optimization recommendations.
+    capabilities:
+      - instagram_analytics
+      - facebook_analytics
+      - meta_ads_analytics
+      - performance_trend_analysis
+      - optimization_recommendations
+      - memory_storage_of_insights
+    handles_tasks:
+      - generate_weekly_analytics
+    tools:
+      - social.ig_get_account_insights
+      - social.ig_get_recent_posts
+      - ads.meta_get_campaign_insights
+      - ads.meta_list_campaigns
+      - agency.memory_store
+      - agency.memory_get
+      - agency.write_file
+    input_needs:
+      required: [client_id]
+      optional: [date_range, metrics, period]
+    output_formats: [analytics_summary, markdown_report]
+    env_required:
+      - INSTAGRAM_ACCESS_TOKEN
+      - INSTAGRAM_BUSINESS_ACCOUNT_ID
+      - META_ACCESS_TOKEN
+      - META_AD_ACCOUNT_ID
+    languages: [fr, en]
+
+  - id: client_manager
+    role: Client Relationship Manager
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: true
+    approval_triggers:
+      - client_facing_communications
+    description: >
+      Maintains client relationships through proactive communication.
+      Drafts WhatsApp updates, handles onboarding, and tracks project
+      status. Communicates in French and Arabic.
+    capabilities:
+      - client_whatsapp_drafting
+      - client_onboarding
+      - project_tracking
+      - status_update_preparation
+      - issue_escalation
+    handles_tasks:
+      - draft_client_update
+    tools:
+      - agency.read_brand_vault
+      - agency.read_file
+      - agency.write_file
+      - agency.list_clients
+      - agency.log_daily
+      - crew.create_project
+      - crew.get_project_status
+      - crew.update_project_status
+    input_needs:
+      required: [client_id]
+      optional: [period, achievements, upcoming, language]
+    output_formats: [whatsapp_message, status_report]
+    languages: [fr, ar, darija]
+
+  - id: email_marketer
+    role: Email Marketing Specialist
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: true
+    approval_triggers:
+      - email_send_actions
+    description: >
+      Designs and executes email campaigns. Writes subject lines and body
+      copy in French and Arabic. Builds automated sequences and tracks
+      deliverability. Optimal send: Tue-Thu, 10 AM or 7 PM Morocco time.
+    capabilities:
+      - newsletter_creation
+      - promotional_email_writing
+      - email_sequence_design
+      - subject_line_optimization
+      - email_copy_fr_ar
+    handles_tasks:
+      - create_email_campaign
+    tools:
+      - agency.read_brand_vault
+      - agency.write_file
+      - agency.memory_search
+    input_needs:
+      required: [client_id]
+      optional: [campaign_type, subject, language, sequence_length]
+    output_formats: [email_template, sequence_plan]
+    languages: [fr, ar]
+
+  - id: lead_gen_specialist
+    role: Lead Generation Specialist
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Finds and qualifies potential new clients for Cell Agency across
+      Morocco. Researches businesses, scores leads, and prepares
+      personalized outreach for Moncef to send.
+    capabilities:
+      - prospect_research_morocco
+      - lead_qualification
+      - outreach_message_preparation
+      - competitor_intelligence
+      - lead_scoring
+    handles_tasks:
+      - find_leads
+    tools:
+      - agency.search_web
+      - agency.fetch_webpage
+      - agency.write_file
+      - agency.memory_store
+    input_needs:
+      required: []
+      optional: [industry, location, budget_range, company_size]
+    output_formats: [prospect_list, outreach_messages]
+    env_required: [SERPER_API_KEY]
+    languages: [fr, ar, darija]
+
+  - id: reporting_agent
+    role: Performance Reporting Specialist
+    department: marketing_ops
+    crew_file: crews/marketing_ops_crew.yaml
+    llm: gpt-4o-mini
+    allow_delegation: false
+    approval_required: false
+    description: >
+      Compiles professional performance reports for clients and internal
+      use. Transforms raw metrics into readable reports that communicate
+      value delivered and next steps.
+    capabilities:
+      - weekly_report_generation
+      - monthly_report_generation
+      - campaign_performance_reporting
+      - data_to_narrative_transformation
+      - client_facing_report_writing
+    handles_tasks:
+      - generate_full_report
+    tools:
+      - social.ig_get_account_insights
+      - social.ig_get_recent_posts
+      - ads.meta_get_campaign_insights
+      - ads.generate_ads_performance_summary
+      - agency.read_file
+      - agency.write_file
+    input_needs:
+      required: [client_id]
+      optional: [month, period, include_ads, language]
+    output_formats: [markdown_report, whatsapp_summary]
+    env_required:
+      - INSTAGRAM_ACCESS_TOKEN
+      - INSTAGRAM_BUSINESS_ACCOUNT_ID
+      - META_ACCESS_TOKEN
+      - META_AD_ACCOUNT_ID
+    languages: [fr, en]

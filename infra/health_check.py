@@ -31,7 +31,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-AGENCY_DIR = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR = get_agency_dir()
 
 # ── Required env vars by phase ─────────────────────────────────────────────────
 ENV_REQUIRED = {

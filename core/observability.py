@@ -32,7 +32,9 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
-AGENCY_DIR   = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR   = get_agency_dir()
 LOGS_DIR     = AGENCY_DIR / "logs"
 WF_LOGS_DIR  = LOGS_DIR / "workflow_logs"
 AG_LOGS_DIR  = LOGS_DIR / "agent_logs"

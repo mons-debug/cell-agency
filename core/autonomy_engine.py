@@ -32,7 +32,9 @@ from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
 
-AGENCY_DIR   = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR   = get_agency_dir()
 CLIENTS_DIR  = AGENCY_DIR / "clients"
 OUTPUTS_DIR  = AGENCY_DIR / "memory" / "outputs"
 CONFIDENCE_THRESHOLD = 0.75

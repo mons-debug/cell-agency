@@ -30,9 +30,10 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
+from core.paths import get_agency_dir
 
 PERMISSIONS_PATH = Path(__file__).parent / "permissions.yaml"
-AGENCY_DIR = Path.home() / "agency"
+AGENCY_DIR = get_agency_dir()
 DENIED_LOG = AGENCY_DIR / "memory" / "denied_access.log"
 
 logger = logging.getLogger(__name__)

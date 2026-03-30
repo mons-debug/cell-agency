@@ -3,7 +3,6 @@ Cell Agency — Core MCP Server
 Provides: file ops, ChromaDB memory, web search, Python runner, client registry,
           brand vault, content calendar, approvals.
 """
-import os
 import sys
 import json
 import subprocess
@@ -21,10 +20,11 @@ from fastmcp import FastMCP
 import chromadb
 from file_tools import read_file, write_file, append_file, list_dir, create_dir, delete_file, file_exists
 from web_tools import web_search, fetch_url
+from core.paths import get_agency_dir
 
 mcp = FastMCP("agency")
 
-AGENCY_DIR = Path.home() / "agency"
+AGENCY_DIR = get_agency_dir()
 CLIENTS_DIR = AGENCY_DIR / "clients"
 CHROMA_PATH = AGENCY_DIR / ".chromadb"
 
@@ -162,7 +162,7 @@ def check_file_permission(agent_id: str, path: str) -> str:
         from permissions import load_permissions
         result = load_permissions().explain(agent_id, path)
         return json.dumps(result, indent=2)
-    except Exception as e:
+    except Exception:
         return json.dumps({"error": str(e)})
 
 

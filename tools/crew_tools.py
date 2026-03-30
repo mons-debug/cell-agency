@@ -9,12 +9,13 @@ from pathlib import Path
 from datetime import date, datetime
 from typing import Optional
 from dotenv import load_dotenv
+from core.paths import get_agency_dir
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from crewai.tools import tool
 
-AGENCY_DIR = Path.home() / "agency"
+AGENCY_DIR = get_agency_dir()
 CLIENTS_DIR = AGENCY_DIR / "clients"
 MEMORY_DIR = AGENCY_DIR / "memory"
 

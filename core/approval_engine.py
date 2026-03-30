@@ -43,7 +43,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-AGENCY_DIR    = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR    = get_agency_dir()
 QUEUE_DIR     = AGENCY_DIR / "approval_queue"
 CONFIDENCE_THRESHOLD = 0.75
 

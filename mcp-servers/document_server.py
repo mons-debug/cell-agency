@@ -18,10 +18,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from fastmcp import FastMCP
 import openai
+from core.paths import get_agency_dir
 
 mcp = FastMCP("document")
 
-AGENCY_DIR   = Path.home() / "agency"
+AGENCY_DIR   = get_agency_dir()
 CLIENTS_DIR  = AGENCY_DIR / "clients"
 OUTPUTS_DIR  = AGENCY_DIR / "memory" / "outputs"
 

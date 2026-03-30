@@ -25,7 +25,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-AGENCY_DIR = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR = get_agency_dir()
 PID_DIR    = AGENCY_DIR / "memory" / "pids"
 LOG_DIR    = AGENCY_DIR / "memory" / "logs"
 

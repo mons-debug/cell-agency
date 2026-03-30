@@ -22,10 +22,11 @@ from image_tools import (
     convert_format,
     encode_image_base64,
 )
+from core.paths import get_agency_dir
 
 mcp = FastMCP("design")
 
-CLIENTS_DIR = Path.home() / "agency" / "clients"
+CLIENTS_DIR = get_agency_dir() / "clients"
 
 # Social media standard dimensions
 SOCIAL_SIZES = {

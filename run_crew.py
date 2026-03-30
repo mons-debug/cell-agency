@@ -29,8 +29,9 @@ from crewai import Agent, Task, Crew, Process, LLM
 import yaml
 
 from crew_tools import get_tools_for_agent
+from core.paths import get_agency_dir
 
-AGENCY_DIR = Path.home() / "agency"
+AGENCY_DIR = get_agency_dir()
 CREWS_DIR = AGENCY_DIR / "crews"
 
 CREW_FILES = {
@@ -179,7 +180,6 @@ def run_workflow(workflow_name: str, client_id: str, inputs: dict, trigger_sourc
     try:
         sys.path.insert(0, str(AGENCY_DIR))
         from core.workflow_engine import load_workflow_engine
-        from core.workflow_registry import list_templates
 
         engine = load_workflow_engine()
         wf     = engine.create(workflow_name, client_id, inputs, trigger_source)

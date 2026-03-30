@@ -25,10 +25,11 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Optional
 
-AGENCY_DIR    = Path.home() / "agency"
+from core.paths import get_agency_dir
+
+AGENCY_DIR    = get_agency_dir()
 WORKFLOW_DIR  = AGENCY_DIR / "memory" / "workflows"
 MAX_RETRIES   = 3
 
@@ -535,7 +536,13 @@ class WorkflowEngine:
                 result = tool_fn.run(json.dumps(inputs))
                 return {"output": result, "tool": tool_name, "inputs_used": list(inputs.keys())}
         except Exception as e:
-            pass
+            obs = self._obs()
+            if obs:
+                obs.log_workflow_event(
+                    wf.id,
+                    "tool_registry_call_failed",
+                    {"tool": tool_name, "error": str(e)},
+                )
 
         # Direct MCP server call (for content/learning/asset/etc.)
         return self._call_mcp_tool(tool_name, inputs)

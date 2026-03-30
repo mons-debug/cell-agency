@@ -22,10 +22,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 from fastmcp import FastMCP
 import chromadb
 import openai
+from core.paths import get_agency_dir
 
 mcp = FastMCP("learning")
 
-AGENCY_DIR      = Path.home() / "agency"
+AGENCY_DIR      = get_agency_dir()
 CLIENTS_DIR     = AGENCY_DIR / "clients"
 CHROMA_PATH     = AGENCY_DIR / ".chromadb"
 MEMORY_DIR      = AGENCY_DIR / "memory"

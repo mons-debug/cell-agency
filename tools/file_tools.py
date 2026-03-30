@@ -1,13 +1,15 @@
-"""File tools — safe file operations scoped to ~/agency/clients/ and ~/agency/skills/"""
-import os
+"""File tools — safe file operations scoped to agency roots."""
 import shutil
 from pathlib import Path
-from typing import Optional
+
+from core.paths import get_agency_dir
+
+AGENCY_DIR = get_agency_dir()
 
 ALLOWED_ROOTS = [
-    Path.home() / "agency" / "clients",
-    Path.home() / "agency" / "skills",
-    Path.home() / "agency" / "memory",
+    AGENCY_DIR / "clients",
+    AGENCY_DIR / "skills",
+    AGENCY_DIR / "memory",
 ]
 
 
@@ -57,7 +59,7 @@ def list_dir(path: str, pattern: str = "*") -> list[str]:
     p = _safe_path(path)
     if not p.is_dir():
         raise NotADirectoryError(f"Not a directory: {path}")
-    return [str(item.relative_to(Path.home() / "agency")) for item in p.glob(pattern)]
+    return [str(item.relative_to(AGENCY_DIR)) for item in p.glob(pattern)]
 
 
 def create_dir(path: str) -> str:

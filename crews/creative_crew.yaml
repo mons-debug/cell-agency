@@ -13,7 +13,7 @@ agents:
       in Moroccan market digital content. You write punchy social captions, persuasive
       ad copy, and engaging long-form content. You always check brand guidelines before
       writing and tailor content to the specific platform and audience.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:
@@ -41,7 +41,7 @@ agents:
       to translate business values, target audience, and competitive positioning into
       a coherent visual identity. You create detailed design briefs and creative
       direction documents that enable precise execution.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:

@@ -38,7 +38,7 @@ agents:
       paid advertising, and content marketing. You think in funnels: awareness → interest
       → consideration → conversion. You create campaigns that are realistic to execute,
       measurable, and aligned with available budget.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:

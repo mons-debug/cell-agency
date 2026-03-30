@@ -40,7 +40,7 @@ agents:
       - path: "memory/**"
         ops: [read, write, append]
       - path: "skills/**"
-        ops: [read]
+        ops: [read, write, append, create_dir]
       - path: "clients/*/reports/**"
         ops: [read, write, append, create_dir]
 

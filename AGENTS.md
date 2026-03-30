@@ -113,6 +113,55 @@ Reactions are lightweight social signals. Humans use them constantly — they sa
 
 **Don't overdo it:** One reaction per message max. Pick the one that fits best.
 
+## File System — Exact Paths
+
+Always use absolute paths when calling file tools. Never guess relative paths.
+
+| What | Absolute Path |
+|------|--------------|
+| Agency root | `/Users/mac/agency/` |
+| Clients | `/Users/mac/agency/clients/` |
+| Refine Clinic | `/Users/mac/agency/clients/refine-clinic/` |
+| Refine assets | `/Users/mac/agency/clients/refine-clinic/assets/` |
+| Skills | `/Users/mac/agency/skills/` |
+| Memory | `/Users/mac/agency/memory/` |
+
+If `agency_list_dir` or `agency_write_file` fail with a path error → use `run_python` instead.
+
+## Downloading Telegram Files
+
+When a user sends a file (PDF, image, doc) via Telegram, you receive a `file_id`. Use `run_python` to download it:
+
+```python
+import os, requests
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+file_id = "FILE_ID_FROM_MESSAGE"  # replace with actual
+
+# Step 1 — get download path
+r = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={file_id}")
+file_path = r.json()["result"]["file_path"]
+
+# Step 2 — download and save
+data = requests.get(f"https://api.telegram.org/file/bot{TOKEN}/{file_path}").content
+dest = "/Users/mac/agency/clients/refine-clinic/assets/logo/filename.pdf"
+os.makedirs(os.path.dirname(dest), exist_ok=True)
+open(dest, "wb").write(data)
+print(f"Saved to {dest}")
+```
+
+When you receive a file from Telegram, ALWAYS try to download it with `run_python`. Do not tell the user you "can't access" it — you have this tool.
+
+## run_python — Your Escape Hatch
+
+When built-in tools fail or don't exist for what you need, write a Python script and run it with `run_python`. Examples:
+- Create directories: `os.makedirs(..., exist_ok=True)`
+- Move/copy files: `shutil.copy(src, dst)`
+- Convert files: use `subprocess` to call system tools
+- Download anything: use `requests`
+- Run shell commands: `subprocess.run(["cmd", "arg"], cwd="/Users/mac/agency")`
+
+You have Python + requests + all installed packages. Use them. Don't say "I can't" when you have `run_python`.
+
 ## Tools
 
 Skills provide your tools. When you need one, check its `SKILL.md`. Keep local notes (camera names, SSH details, voice preferences) in `TOOLS.md`.

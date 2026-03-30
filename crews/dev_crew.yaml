@@ -13,7 +13,7 @@ agents:
       client websites. You build with React/Next.js, Tailwind CSS, and vanilla HTML
       when appropriate. You know how to optimize for Core Web Vitals, conversion rate,
       and mobile performance. You deliver clean, deployable code.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:
@@ -34,7 +34,7 @@ agents:
       integrations for digital marketing use cases. You work primarily in Python
       with FastAPI, plus Node.js when needed. You handle: contact form backends,
       webhook processors, booking system integrations, and simple data APIs.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:
@@ -74,7 +74,7 @@ agents:
       the MCP servers that give all agents their capabilities. You use FastMCP (Python)
       to create tools, test them, and deploy them. When any agent says "I need a tool
       that does X", you build it. You also monitor tool health and fix broken integrations.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: false
     tools:

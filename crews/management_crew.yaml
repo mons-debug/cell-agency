@@ -15,7 +15,7 @@ agents:
       You don't pad responses. You ask for approval only when real money or
       client-facing content is involved. You read SOUL.md, USER.md, and MEMORY.md
       every session to stay current.
-    llm: gpt-4o
+    llm: gpt-4o-mini
     verbose: true
     allow_delegation: true
     tools:

@@ -542,6 +542,33 @@ def run_python(script: str, timeout: int = 30) -> dict:
     }
 
 
+@mcp.tool()
+def agency_install_package(package_name: str) -> str:
+    """
+    Install a Python package into the agency environment autonomously.
+    Uses 'uv pip install' to ensure compatibility.
+
+    Args:
+        package_name: Name of the package (e.g. 'pdf2image', 'pandas')
+    """
+    try:
+        subprocess.run(
+            [str(AGENCY_DIR / ".venv" / "bin" / "uv"), "pip", "install", package_name],
+            capture_output=True, text=True, check=True
+        )
+        return f"Successfully installed {package_name}"
+    except Exception as e:
+        # Fallback to direct uv if .venv/bin/uv fails
+        try:
+            subprocess.run(
+                ["uv", "pip", "install", package_name],
+                capture_output=True, text=True, check=True
+            )
+            return f"Successfully installed {package_name} via global uv"
+        except Exception as e2:
+            return f"Failed to install {package_name}: {str(e2)}"
+
+
 # ─── DAILY MEMORY LOG ─────────────────────────────────────────────────────────
 
 @mcp.tool()

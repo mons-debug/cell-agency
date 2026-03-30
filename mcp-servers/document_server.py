@@ -7,6 +7,7 @@ import os
 import sys
 import json
 from pathlib import Path
+from typing import Optional
 from datetime import date, datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
@@ -201,6 +202,52 @@ Be specific, data-driven where data is provided, and highlight wins and opportun
         "report_type": report_type,
         "period": period,
     }, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def convert_pdf_to_images(
+    pdf_path: str,
+    client_id: str,
+    output_dir: Optional[str] = None,
+    format: str = "PNG",
+) -> str:
+    """
+    Convert a PDF file into images (one per page).
+
+    Args:
+        pdf_path: Path to the source PDF
+        client_id: Client identifier
+        output_dir: Optional subfolder in client's assets (defaults to 'images')
+        format: 'PNG' | 'JPEG'
+    """
+    from pdf2image import convert_from_path
+    
+    source = Path(pdf_path).expanduser()
+    if not source.is_absolute():
+        source = AGENCY_DIR / pdf_path
+        
+    if not source.exists():
+        return f"Error: PDF not found at {source}"
+
+    target_root = CLIENTS_DIR / client_id / (output_dir or "images")
+    target_root.mkdir(parents=True, exist_ok=True)
+    
+    # Ensure poppler_path is set if needed on Mac (usually in /usr/local/bin or /opt/homebrew/bin)
+    # pdf2image usually finds it in PATH if installed via brew.
+    images = convert_from_path(str(source))
+    saved_paths = []
+    
+    for i, image in enumerate(images):
+        fname = f"{source.stem}_page_{i+1}.{format.lower()}"
+        out_path = target_root / fname
+        image.save(str(out_path), format)
+        saved_paths.append(str(out_path))
+        
+    return json.dumps({
+        "message": f"Converted {len(images)} pages from {source.name}",
+        "saved_paths": saved_paths,
+        "format": format
+    }, indent=2)
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from fastmcp import FastMCP
-import anthropic
+import openai
 
 mcp = FastMCP("video")
 
@@ -35,14 +35,16 @@ def _load_brandkit(client_id: str) -> dict:
 
 
 def _generate(system_prompt: str, user_prompt: str, max_tokens: int = 2000) -> str:
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    client = openai.OpenAI()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
         max_tokens=max_tokens,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
     )
-    return response.content[0].text
+    return response.choices[0].message.content
 
 
 # ─── REEL CONCEPT GENERATION ─────────────────────────────────────────────────

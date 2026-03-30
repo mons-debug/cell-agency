@@ -1,0 +1,19 @@
+{
+  "type": "campaign_opportunity_detection",
+  "client_id": "refine",
+  "date": "2026-03-30",
+  "opportunities": [
+    {
+      "opportunity": "Spring renewal skincare launch",
+      "month": 3,
+      "priority": "medium"
+    },
+    {
+      "opportunity": "Ramadan preparation",
+      "month": 3,
+      "priority": "medium"
+    }
+  ],
+  "confidence": 0.7,
+  "trigger_source": "autonomous"
+}

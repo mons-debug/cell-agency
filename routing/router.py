@@ -36,7 +36,7 @@ ROUTING_TABLE_PATH = Path(__file__).parent / "routing_table.yaml"
 KEYWORD_MATCH_WEIGHT = 1.0       # score per exact keyword match
 REGEX_MATCH_WEIGHT = 0.8         # score per regex match
 MIN_KEYWORD_SCORE = 0.2          # minimum normalised score to consider a route
-LLM_FALLBACK_MODEL = "claude-haiku-4-5-20251001"
+LLM_FALLBACK_MODEL = "gpt-4o-mini"
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
@@ -99,15 +99,18 @@ class SmartRouter:
         self,
         message: str,
         context: Optional[dict] = None,
-        use_llm_fallback: bool = True,
+        use_llm_fallback: bool = False,
     ) -> RouteDecision:
         """
         Route a message to the best skill/crew/task/agent.
 
+        Keyword/regex matching is used for known task shortcuts (fast, zero API calls).
+        When no keyword matches, routes directly to Nadia — no intermediate LLM call.
+
         Args:
             message: Raw text message from Moncef (Telegram)
             context: Optional additional context (client_id, etc.)
-            use_llm_fallback: Whether to call LLM when keywords don't match
+            use_llm_fallback: Kept for API compatibility but disabled by default.
 
         Returns:
             RouteDecision with full routing info
@@ -131,14 +134,7 @@ class SmartRouter:
                     method="keyword",
                 )
 
-        # Step 2: LLM fallback
-        if use_llm_fallback:
-            try:
-                return self._llm_classify(message, ctx)
-            except Exception as e:
-                logger.warning(f"LLM routing fallback failed: {e}")
-
-        # Step 3: Hard fallback
+        # Step 2: Direct fallback to Nadia — no extra LLM classification call
         return self._hard_fallback(ctx)
 
     def explain(self, message: str) -> list[dict]:
@@ -272,13 +268,13 @@ class SmartRouter:
         Returns a RouteDecision with method="llm".
         """
         try:
-            import anthropic
+            import openai
         except ImportError:
-            raise RuntimeError("anthropic package not installed — cannot use LLM fallback")
+            raise RuntimeError("openai package not installed — cannot use LLM fallback")
 
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY not set — cannot use LLM fallback")
+            raise RuntimeError("OPENAI_API_KEY not set — cannot use LLM fallback")
 
         # Build a compact route menu for the LLM to choose from
         route_menu = []
@@ -317,15 +313,17 @@ class SmartRouter:
             '"task": "route_task", "agent": "nadia", "confidence": 0.3}'
         )
 
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
+        client = openai.OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
             model=LLM_FALLBACK_MODEL,
             max_tokens=256,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
         )
 
-        raw = response.content[0].text.strip()
+        raw = response.choices[0].message.content.strip()
 
         # Strip markdown code blocks if present
         raw = re.sub(r"^```(?:json)?\s*", "", raw)

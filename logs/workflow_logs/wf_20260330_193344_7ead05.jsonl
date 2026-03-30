@@ -1,0 +1,1 @@
+{"ts": "2026-03-30T19:33:44.200387", "workflow_id": "wf_20260330_193344_7ead05", "event": "created", "data": {"name": "generate_report", "client_id": "refine", "trigger_source": "manual", "steps": 3}}

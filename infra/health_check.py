@@ -36,7 +36,7 @@ AGENCY_DIR = Path.home() / "agency"
 # ── Required env vars by phase ─────────────────────────────────────────────────
 ENV_REQUIRED = {
     "phase1_core": [
-        "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
         "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_OWNER_ID",
     ],
@@ -63,10 +63,18 @@ ENV_REQUIRED = {
 
 # ── MCP server definitions ─────────────────────────────────────────────────────
 MCP_SERVERS = {
-    "agency":  "mcp-servers/agency_server.py",
-    "social":  "mcp-servers/social_server.py",
-    "ads":     "mcp-servers/ads_server.py",
-    "design":  "mcp-servers/design_server.py",
+    # Original 4
+    "agency":   "mcp-servers/agency_server.py",
+    "social":   "mcp-servers/social_server.py",
+    "ads":      "mcp-servers/ads_server.py",
+    "design":   "mcp-servers/design_server.py",
+    # New 6 (Phase 1)
+    "content":  "mcp-servers/content_server.py",
+    "video":    "mcp-servers/video_server.py",
+    "asset":    "mcp-servers/asset_server.py",
+    "document": "mcp-servers/document_server.py",
+    "web":      "mcp-servers/web_server.py",
+    "learning": "mcp-servers/learning_server.py",
 }
 
 DISK_MIN_MB = 500  # minimum free disk space in MB
@@ -148,6 +156,7 @@ class HealthChecker:
             self.check_memory_dir(),
             self.check_clients(),
             self.check_disk(),
+            self.check_observability(),
         ]
         return report
 
@@ -393,6 +402,58 @@ class HealthChecker:
             status="ok",
             message=f"{len(clients)} client(s) registered.",
             details=details,
+        )
+
+    def check_observability(self) -> ComponentStatus:
+        """Check observability logs directory and recent activity."""
+        logs_dir = AGENCY_DIR / "logs"
+        wf_logs  = logs_dir / "workflow_logs"
+        ag_logs  = logs_dir / "agent_logs"
+        tl_logs  = logs_dir / "tool_usage"
+
+        missing = [
+            d.name for d in [logs_dir, wf_logs, ag_logs, tl_logs] if not d.exists()
+        ]
+        if missing:
+            return ComponentStatus(
+                name="Observability",
+                status="warn",
+                message=f"Log directories missing: {missing}. Run start_agency.sh to create.",
+            )
+
+        import json as _json
+
+        wf_count = len(list(wf_logs.glob("*.jsonl")))
+        ag_count = len(list(ag_logs.glob("*.jsonl")))
+        tl_count = len(list(tl_logs.glob("*.jsonl")))
+
+        # Count pending approvals
+        approval_dir = AGENCY_DIR / "approval_queue"
+        pending_approvals = 0
+        if approval_dir.exists():
+            for f in approval_dir.glob("*.json"):
+                try:
+                    d = _json.loads(f.read_text(encoding="utf-8"))
+                    if d.get("status") in ("pending", "edited"):
+                        pending_approvals += 1
+                except Exception:
+                    pass
+
+        # Count autonomous drafts
+        outputs_dir = AGENCY_DIR / "memory" / "outputs"
+        draft_count = len(list(outputs_dir.glob("*.json"))) if outputs_dir.exists() else 0
+
+        return ComponentStatus(
+            name="Observability",
+            status="ok",
+            message="Observability system online.",
+            details={
+                "workflow_logs": f"{wf_count} workflow(s) tracked",
+                "agent_logs":    f"{ag_count} agent(s) tracked",
+                "tool_logs":     f"{tl_count} daily log(s)",
+                "pending_approvals": str(pending_approvals),
+                "autonomous_drafts": str(draft_count),
+            },
         )
 
     def check_disk(self) -> ComponentStatus:

@@ -1,0 +1,55 @@
+{
+  "id": "wf_20260330_133324_089fc3",
+  "name": "daily_analysis",
+  "client_id": "refine",
+  "steps": [
+    {
+      "name": "run_analysis",
+      "agent": "strategy_agent",
+      "tool": "learning.daily_analysis",
+      "description": "Run daily performance analysis and store insights",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 1,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": null,
+      "error": "\"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\"",
+      "started_at": "2026-03-30T13:33:24.405258",
+      "completed_at": null,
+      "status": "pending"
+    },
+    {
+      "name": "detect_gaps",
+      "agent": "strategy_agent",
+      "tool": "learning.detect_content_gaps",
+      "description": "Detect content gaps after analysis",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": null,
+      "error": null,
+      "started_at": null,
+      "completed_at": null,
+      "status": "pending"
+    }
+  ],
+  "state": "running",
+  "current_step": 0,
+  "inputs": {
+    "client_id": "refine"
+  },
+  "outputs": {},
+  "trigger_source": "manual",
+  "created_at": "2026-03-30T13:33:24.399117",
+  "updated_at": "2026-03-30T13:33:33.306080",
+  "completed_at": null,
+  "error": "Step 'run_analysis' failed (retry 1/3): \"Could not resolve authentication method. Expected either api_key or auth_token to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted\"",
+  "approval_task_id": null
+}

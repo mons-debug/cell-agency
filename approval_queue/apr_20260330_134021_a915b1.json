@@ -1,0 +1,18 @@
+{
+  "task_id": "apr_20260330_134021_a915b1",
+  "action": "publish_instagram_post",
+  "client_id": "refine",
+  "draft_output": {
+    "caption": "Edited caption!"
+  },
+  "status": "approved",
+  "confidence": 0.91,
+  "workflow_id": "wf_20260330_134021_8edcf0",
+  "workflow_step": null,
+  "trigger_source": "manual",
+  "notes": "",
+  "feedback": null,
+  "created_at": "2026-03-30T13:40:21.276715",
+  "updated_at": "2026-03-30T13:40:21.278913",
+  "resolved_at": "2026-03-30T13:40:21.278896"
+}

@@ -1,0 +1,21 @@
+{
+  "task_id": "apr_20260330_193344_de8791",
+  "action": "publish_instagram_post",
+  "client_id": "refine",
+  "draft_output": {
+    "caption": "Test caption",
+    "hashtags": [
+      "#laser"
+    ]
+  },
+  "status": "pending",
+  "confidence": 0.85,
+  "workflow_id": null,
+  "workflow_step": null,
+  "trigger_source": "manual",
+  "notes": "",
+  "feedback": null,
+  "created_at": "2026-03-30T19:33:44.211009",
+  "updated_at": "2026-03-30T19:33:44.211026",
+  "resolved_at": null
+}

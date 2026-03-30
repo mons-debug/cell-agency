@@ -686,6 +686,260 @@ def task_reply_tool(task_id: str, from_agent: str, message: str) -> str:
         return f"❌ Task not found: {e}"
 
 
+# ─── APPROVAL ENGINE TOOLS ────────────────────────────────────────────────────
+
+@tool("Submit for Approval")
+def submit_approval_tool(
+    action: str,
+    client_id: str,
+    draft_output_json: str,
+    confidence: float = 0.0,
+    workflow_id: str = "",
+    notes: str = "",
+) -> str:
+    """
+    Submit an action for Moncef's approval before executing it.
+    Use for publishing, ads, website deploys, or any autonomous action.
+    confidence: 0.0–1.0 — below 0.75 always requires approval.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    import json
+    from core.approval_engine import load_approval_engine
+    draft = json.loads(draft_output_json) if draft_output_json.strip() else {}
+    engine  = load_approval_engine()
+    task_id = engine.submit(
+        action=action,
+        client_id=_resolve_client(client_id),
+        draft_output=draft,
+        confidence=confidence,
+        workflow_id=workflow_id or None,
+        notes=notes,
+    )
+    return f"Submitted for approval: {task_id} — action: {action}"
+
+
+@tool("List Pending Approvals")
+def list_approvals_tool(client_id: str = "") -> str:
+    """List all items in the approval queue waiting for Moncef's review."""
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    from core.approval_engine import load_approval_engine
+    engine = load_approval_engine()
+    return engine.queue_summary()
+
+
+@tool("Create Workflow")
+def create_workflow_tool(workflow_name: str, client_id: str, inputs_json: str = "{}") -> str:
+    """
+    Create and start a named workflow via the Workflow Engine.
+    workflow_name: create_instagram_post | create_reel | content_planning | website_creation | generate_report
+    """
+    import sys, json
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from core.workflow_engine import load_workflow_engine
+    inputs = json.loads(inputs_json) if inputs_json.strip() else {}
+    inputs.setdefault("client_id", _resolve_client(client_id))
+    engine = load_workflow_engine()
+    wf     = engine.create(workflow_name, _resolve_client(client_id), inputs)
+    wf     = engine.start(wf.id)
+    return f"Workflow {wf.id} started | state: {wf.state.value} | {len(wf.steps)} steps"
+
+
+@tool("Get Workflow Status")
+def workflow_status_tool(workflow_id: str) -> str:
+    """Get current status of a running workflow."""
+    import sys, json
+    sys.path.insert(0, str(AGENCY_DIR))
+    from core.workflow_engine import load_workflow_engine
+    engine = load_workflow_engine()
+    return json.dumps(engine.get_status(workflow_id), ensure_ascii=False, indent=2)
+
+
+# ─── CONTENT SERVER TOOLS ────────────────────────────────────────────────────
+
+@tool("Generate Content Strategy")
+def generate_content_strategy_tool(client_id: str, goal: str, weeks: int = 4, platforms: str = "instagram") -> str:
+    """
+    Generate a multi-week content strategy for a client.
+    Reads brandkit for context, returns strategy JSON with themes, content mix, and key messages.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from content_server import generate_content_strategy
+    return generate_content_strategy(client_id, goal, weeks, platforms)
+
+
+@tool("Generate Caption")
+def generate_caption_tool(client_id: str, topic: str, platform: str = "instagram", language: str = "french", tone: str = "") -> str:
+    """
+    Generate a platform-optimized caption for a social post.
+    Reads brandkit for tone of voice, audience, and sensitivity rules.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from content_server import generate_caption
+    return generate_caption(client_id, topic, platform, language, tone)
+
+
+@tool("Create Content Plan")
+def create_content_plan_tool(client_id: str, weeks: int = 2, themes: str = "") -> str:
+    """
+    Create a detailed week-by-week content calendar with post ideas, formats, and timing.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from content_server import create_content_plan
+    return create_content_plan(client_id, weeks, themes)
+
+
+@tool("Generate Ad Copy")
+def generate_ad_copy_tool(client_id: str, campaign_goal: str, offer: str, language: str = "french") -> str:
+    """Generate ad copy variations for a campaign — headlines, primary text, CTAs."""
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from content_server import generate_ad_copy
+    return generate_ad_copy(client_id, campaign_goal, offer, language)
+
+
+# ─── VIDEO SERVER TOOLS ───────────────────────────────────────────────────────
+
+@tool("Generate Reel Concept")
+def generate_reel_concept_tool(client_id: str, topic: str, duration_s: int = 15, style: str = "educational") -> str:
+    """
+    Generate a structured reel concept JSON with hook, scenes, transitions, CTA, and music mood.
+    Use before producing any video content.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from video_server import generate_reel_concept
+    return generate_reel_concept(client_id, topic, duration_s, style)
+
+
+# ─── ASSET SERVER TOOLS ───────────────────────────────────────────────────────
+
+@tool("Search Assets")
+def search_assets_tool(client_id: str, query: str, asset_type: str = "all", limit: int = 10) -> str:
+    """
+    Search client assets by semantic query. Searches ChromaDB tags + filename matching.
+    asset_type: 'image' | 'video' | 'logo' | 'all'
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from asset_server import search_assets
+    return search_assets(client_id, query, asset_type, limit)
+
+
+@tool("Choose Best Assets")
+def choose_best_assets_tool(client_id: str, brief: str, count: int = 3) -> str:
+    """
+    Score and rank available assets for a given creative brief.
+    Returns top N assets with relevance scores.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from asset_server import choose_best_assets
+    return choose_best_assets(client_id, brief, count)
+
+
+@tool("List Assets")
+def list_assets_tool(client_id: str, asset_type: str = "all") -> str:
+    """List all assets for a client with file sizes and metadata."""
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from asset_server import list_assets
+    return list_assets(client_id, asset_type)
+
+
+# ─── DOCUMENT SERVER TOOLS ───────────────────────────────────────────────────
+
+@tool("Generate Document")
+def generate_document_tool(client_id: str, doc_type: str, title: str, sections: str = "", language: str = "french") -> str:
+    """
+    Generate a professional document (proposal, brief, report, plan, strategy, onboarding).
+    Saves to memory/outputs/{client_id}/ and returns the file path + content.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from document_server import generate_document
+    return generate_document(client_id, doc_type, title, sections, language)
+
+
+@tool("Generate Report")
+def generate_report_tool(client_id: str, report_type: str, period: str, data_json: str = "{}") -> str:
+    """
+    Generate a performance report (weekly, monthly, campaign, social, ads).
+    report_type: 'weekly' | 'monthly' | 'campaign' | 'social' | 'ads' | 'annual'
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from document_server import generate_report
+    return generate_report(client_id, report_type, period, data_json)
+
+
+# ─── LEARNING SERVER TOOLS ────────────────────────────────────────────────────
+
+@tool("Find Inspiration")
+def find_inspiration_tool(query: str, platform: str = "instagram", industry: str = "beauty", limit: int = 5) -> str:
+    """
+    Search for marketing inspiration. Checks ChromaDB cache first, then web search.
+    Stores results for future reference. Call before creating any new content.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from learning_server import find_inspiration
+    return find_inspiration(query, platform, industry, limit)
+
+
+@tool("Store Learning")
+def store_learning_server_tool(insight: str, client_id: str = "", source: str = "", category: str = "general", metric: str = "", value: str = "") -> str:
+    """
+    Store a marketing learning in the agency knowledge base (ChromaDB + filesystem).
+    category: content_performance | audience_insight | campaign_result | best_practice | brand_guideline
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from learning_server import store_learning
+    return store_learning(insight, client_id, source, category, metric, value)
+
+
+@tool("Query Learnings")
+def query_learnings_tool(query: str, client_id: str = "", category: str = "", limit: int = 5) -> str:
+    """
+    Semantic search over stored marketing learnings. Call BEFORE creating content.
+    Searches client-specific and agency-wide collections.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from learning_server import query_learnings
+    return query_learnings(query, client_id, category, limit)
+
+
+@tool("Daily Analysis")
+def daily_analysis_tool(client_id: str) -> str:
+    """
+    Run daily performance analysis for a client. Generates insights and auto-stores
+    top learnings to ChromaDB for future content decisions.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from learning_server import daily_analysis
+    return daily_analysis(client_id)
+
+
+@tool("Detect Content Gaps")
+def detect_content_gaps_tool(client_id: str) -> str:
+    """
+    Analyze content calendar to find underrepresented themes and missing service coverage.
+    Returns recommended next 5 posts.
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    from learning_server import detect_content_gaps
+    return detect_content_gaps(client_id)
+
+
 # ─── TOOL REGISTRY ────────────────────────────────────────────────────────────
 # Maps YAML tool names to actual tool objects
 
@@ -735,6 +989,32 @@ TOOL_REGISTRY = {
     "crew.task_complete": task_complete_tool,
     "crew.task_fail":     task_fail_tool,
     "crew.task_reply":    task_reply_tool,
+    # Content server
+    "content.generate_content_strategy": generate_content_strategy_tool,
+    "content.generate_caption":          generate_caption_tool,
+    "content.create_content_plan":       create_content_plan_tool,
+    "content.generate_ad_copy":          generate_ad_copy_tool,
+    # Video server
+    "video.generate_reel_concept":       generate_reel_concept_tool,
+    # Asset server
+    "asset.search_assets":               search_assets_tool,
+    "asset.choose_best_assets":          choose_best_assets_tool,
+    "asset.list_assets":                 list_assets_tool,
+    # Document server
+    "document.generate_document":        generate_document_tool,
+    "document.generate_report":          generate_report_tool,
+    # Learning server
+    "learning.find_inspiration":         find_inspiration_tool,
+    "learning.store_learning":           store_learning_server_tool,
+    "learning.query_learnings":          query_learnings_tool,
+    "learning.daily_analysis":           daily_analysis_tool,
+    "learning.detect_content_gaps":      detect_content_gaps_tool,
+    # Approval engine
+    "approval.submit":                   submit_approval_tool,
+    "approval.list_pending":             list_approvals_tool,
+    # Workflow engine
+    "workflow.create":                   create_workflow_tool,
+    "workflow.status":                   workflow_status_tool,
 }
 
 

@@ -1,0 +1,18 @@
+{
+  "deliverable_id": "del_20260330_193403_a9d506",
+  "client_id": "refine",
+  "workflow_name": "create_instagram_post",
+  "workflow_id": "wf_e2e_001",
+  "agents_used": [],
+  "tools_used": [],
+  "files": [
+    "outputs.json",
+    "caption.txt"
+  ],
+  "created_at": "2026-03-30T19:34:03.218907",
+  "approved_by": null,
+  "approved_at": null,
+  "trigger_source": "manual",
+  "performance": {},
+  "tags": []
+}

@@ -1010,5 +1010,743 @@ def get_agent_task(task_id: str) -> str:
         return json.dumps({"error": str(e)})
 
 
+# ─── APPROVAL ENGINE ─────────────────────────────────────────────────────────
+
+@mcp.tool()
+def submit_approval(
+    action: str,
+    client_id: str,
+    draft_output_json: str,
+    confidence: float = 0.0,
+    workflow_id: str = "",
+    trigger_source: str = "manual",
+    notes: str = "",
+) -> str:
+    """
+    Submit an action for owner approval.
+
+    Use this for any action that requires Moncef's sign-off before execution:
+    publishing content, launching ads, deploying websites, client communications,
+    or any autonomous action with confidence < 0.75.
+
+    Args:
+        action:            What is being requested (e.g. "publish_instagram_post")
+        client_id:         Client this is for
+        draft_output_json: JSON string with the draft content to be reviewed
+        confidence:        Agent confidence 0.0–1.0 (below 0.75 = auto-approval-required)
+        workflow_id:       Link to a workflow (optional)
+        trigger_source:    "manual" | "autonomous"
+        notes:             Agent context or explanation
+
+    Returns:
+        JSON with task_id and confirmation
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        draft_output = json.loads(draft_output_json) if draft_output_json.strip() else {}
+        engine  = load_approval_engine()
+        task_id = engine.submit(
+            action=action,
+            client_id=resolve_client_id(client_id),
+            draft_output=draft_output,
+            confidence=confidence,
+            workflow_id=workflow_id or None,
+            trigger_source=trigger_source,
+            notes=notes,
+        )
+        return json.dumps({
+            "submitted":   True,
+            "task_id":     task_id,
+            "action":      action,
+            "client_id":   resolve_client_id(client_id),
+            "message":     f"Submitted for approval — use approve_task('{task_id}') or reject_task('{task_id}')",
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def approve_task(task_id: str) -> str:
+    """
+    Approve a pending approval task.
+
+    If the task is linked to a workflow, the workflow transitions
+    from WAITING_APPROVAL → APPROVED → continues execution.
+
+    Args:
+        task_id: Approval task ID (e.g. 'apr_20260330_143000_abc123')
+
+    Returns:
+        JSON confirmation with task status
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        engine = load_approval_engine()
+        task   = engine.approve(task_id)
+        return json.dumps({
+            "approved":    True,
+            "task_id":     task_id,
+            "action":      task.action,
+            "client_id":   task.client_id,
+            "workflow_id": task.workflow_id,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def reject_task(task_id: str, feedback: str = "") -> str:
+    """
+    Reject a pending approval task.
+
+    If linked to a workflow, transitions the workflow to FAILED
+    with the feedback attached for retry/revision.
+
+    Args:
+        task_id:  Approval task ID
+        feedback: Reason for rejection (used to improve next attempt)
+
+    Returns:
+        JSON confirmation with task status and feedback
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        engine = load_approval_engine()
+        task   = engine.reject(task_id, feedback)
+        return json.dumps({
+            "rejected":    True,
+            "task_id":     task_id,
+            "action":      task.action,
+            "feedback":    feedback,
+            "workflow_id": task.workflow_id,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def edit_approval_draft(task_id: str, changes_json: str) -> str:
+    """
+    Edit the draft output of a pending approval task before approving.
+
+    Use when you want to tweak the content rather than reject and regenerate.
+    Merges changes into the existing draft_output.
+
+    Args:
+        task_id:      Approval task ID
+        changes_json: JSON string with fields to update in draft_output
+
+    Returns:
+        JSON confirmation with updated draft
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        changes = json.loads(changes_json) if changes_json.strip() else {}
+        engine  = load_approval_engine()
+        task    = engine.edit(task_id, changes)
+        return json.dumps({
+            "edited":       True,
+            "task_id":      task_id,
+            "draft_output": task.draft_output,
+            "message":      f"Draft updated — use approve_task('{task_id}') to approve",
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def list_approvals(client_id: str = "", status: str = "pending") -> str:
+    """
+    List approval tasks from the queue.
+
+    Args:
+        client_id: Filter by client (empty = all clients)
+        status:    "pending" | "approved" | "rejected" | "edited" | "all"
+
+    Returns:
+        JSON array of approval tasks, most recent first
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        engine   = load_approval_engine()
+        resolved = resolve_client_id(client_id) if client_id else ""
+        if status == "pending":
+            tasks = engine.list_pending(resolved)
+        else:
+            tasks = engine.list_all(resolved, status if status != "all" else "")
+        return json.dumps(
+            [t.to_dict() for t in tasks],
+            ensure_ascii=False, indent=2,
+        )
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def approval_queue_summary() -> str:
+    """
+    Return a Markdown table of all pending approval tasks.
+    Shows task ID, action, client, confidence, source, and age.
+
+    Returns:
+        Markdown-formatted queue summary
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine
+        engine = load_approval_engine()
+        return engine.queue_summary()
+    except Exception as e:
+        return f"Error loading approval queue: {e}"
+
+
+@mcp.tool()
+def check_requires_approval(action: str, confidence: float = 1.0, trigger_source: str = "manual") -> str:
+    """
+    Check whether a given action requires owner approval before executing.
+
+    Args:
+        action:         Action name (e.g. "publish_instagram_post")
+        confidence:     Confidence score 0.0–1.0
+        trigger_source: "manual" | "autonomous"
+
+    Returns:
+        JSON {"requires_approval": bool, "reason": str}
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.approval_engine import load_approval_engine, CONFIDENCE_THRESHOLD
+        engine   = load_approval_engine()
+        required = engine.requires_approval(action, confidence, trigger_source)
+        reason   = ""
+        if required:
+            if confidence < CONFIDENCE_THRESHOLD:
+                reason = f"Confidence {confidence:.0%} below threshold {CONFIDENCE_THRESHOLD:.0%}"
+            elif trigger_source == "autonomous":
+                reason = "Autonomous actions always require approval"
+            else:
+                reason = "High-risk action requires approval"
+        return json.dumps({
+            "requires_approval": required,
+            "action":            action,
+            "confidence":        confidence,
+            "trigger_source":    trigger_source,
+            "reason":            reason,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+# ─── WORKFLOW ENGINE ─────────────────────────────────────────────────────────
+
+@mcp.tool()
+def create_workflow(
+    workflow_name: str,
+    client_id: str,
+    inputs_json: str = "{}",
+    trigger_source: str = "manual",
+) -> str:
+    """
+    Create and start a named workflow via the Workflow Engine state machine.
+
+    Available workflows:
+        create_instagram_post — strategy → assets → caption → QA → approval
+        create_reel           — inspiration → concept → assets → caption → QA → approval
+        content_planning      — gaps → strategy → plan → QA → approval
+        website_creation      — strategy → generate → QA → approval
+        generate_report       — analysis → report → QA
+        daily_analysis        — autonomous daily performance analysis
+
+    Args:
+        workflow_name:  Template name
+        client_id:      Client identifier (e.g. 'refine')
+        inputs_json:    JSON string of workflow inputs (topic, language, weeks, etc.)
+        trigger_source: 'manual' | 'autonomous'
+
+    Returns:
+        JSON with workflow_id, state, current step, and any outputs
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        inputs = json.loads(inputs_json) if inputs_json.strip() else {}
+        inputs.setdefault("client_id", resolve_client_id(client_id))
+        engine = load_workflow_engine()
+        wf     = engine.create(workflow_name, resolve_client_id(client_id), inputs, trigger_source)
+        wf     = engine.start(wf.id)
+        return json.dumps({
+            "workflow_id":  wf.id,
+            "workflow":     workflow_name,
+            "client_id":    wf.client_id,
+            "state":        wf.state.value,
+            "current_step": wf.current_step,
+            "total_steps":  len(wf.steps),
+            "outputs":      wf.outputs,
+            "error":        wf.error,
+            "message": (
+                "Awaiting your approval — review and use approve_workflow() or reject_workflow()"
+                if wf.state.value == "waiting_approval"
+                else f"Workflow {wf.state.value}"
+            ),
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def workflow_status(workflow_id: str) -> str:
+    """
+    Get the current status of a workflow by ID.
+
+    Args:
+        workflow_id: Workflow ID (e.g. 'wf_20260330_143000_abc123')
+
+    Returns:
+        JSON status with state, current step, outputs, and error if any
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        engine = load_workflow_engine()
+        return json.dumps(engine.get_status(workflow_id), ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def approve_workflow(workflow_id: str) -> str:
+    """
+    Approve a workflow that is waiting for approval.
+    Transitions: WAITING_APPROVAL → APPROVED → continues execution.
+
+    Args:
+        workflow_id: Workflow ID to approve
+
+    Returns:
+        JSON with new state and any outputs from remaining steps
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        engine = load_workflow_engine()
+        wf = engine.approve(workflow_id)
+        return json.dumps({
+            "approved":     True,
+            "workflow_id":  workflow_id,
+            "state":        wf.state.value,
+            "outputs":      wf.outputs,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def reject_workflow(workflow_id: str, feedback: str = "") -> str:
+    """
+    Reject a workflow waiting for approval.
+    Transitions: WAITING_APPROVAL → FAILED with feedback attached.
+
+    Args:
+        workflow_id: Workflow ID to reject
+        feedback:    Reason for rejection (used for retry improvements)
+
+    Returns:
+        JSON confirmation with state
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        engine = load_workflow_engine()
+        wf = engine.reject(workflow_id, feedback)
+        return json.dumps({
+            "rejected":    True,
+            "workflow_id": workflow_id,
+            "state":       wf.state.value,
+            "feedback":    feedback,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def retry_workflow(workflow_id: str) -> str:
+    """
+    Retry a FAILED workflow from the current step.
+    Resets retry counter for the failed step.
+
+    Args:
+        workflow_id: Workflow ID to retry
+
+    Returns:
+        JSON with new state after retry attempt
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        engine = load_workflow_engine()
+        wf = engine.retry(workflow_id)
+        return json.dumps({
+            "retried":     True,
+            "workflow_id": workflow_id,
+            "state":       wf.state.value,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def list_workflows(client_id: str = "", state: str = "", limit: int = 20) -> str:
+    """
+    List recent workflows, optionally filtered by client or state.
+
+    Args:
+        client_id: Filter by client (empty = all clients)
+        state:     Filter by state: pending|running|waiting_approval|approved|completed|failed
+        limit:     Max results (default 20)
+
+    Returns:
+        JSON array of workflow status summaries, sorted by most recent first
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_engine import load_workflow_engine
+        engine = load_workflow_engine()
+        resolved = resolve_client_id(client_id) if client_id else ""
+        workflows = engine.list_workflows(client_id=resolved, state=state, limit=limit)
+        return json.dumps(workflows, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def list_workflow_templates() -> str:
+    """
+    List all available workflow templates with their steps, agents, and approval requirements.
+
+    Returns:
+        JSON dict of template_name → metadata
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.workflow_registry import list_templates, get_template_info
+        result = {name: get_template_info(name) for name in list_templates()}
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+# ─── DELIVERABLE SYSTEM ──────────────────────────────────────────────────────
+
+@mcp.tool()
+def list_deliverables(client_id: str = "", workflow_type: str = "", limit: int = 20) -> str:
+    """
+    List deliverables from completed workflows.
+
+    Args:
+        client_id:     Filter by client (empty = all clients)
+        workflow_type: Filter by workflow name (e.g. "create_instagram_post")
+        limit:         Max results (default 20)
+
+    Returns:
+        JSON array of deliverable metadata, most recent first
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.deliverable_manager import load_deliverable_manager
+        dm = load_deliverable_manager()
+        resolved = resolve_client_id(client_id) if client_id else ""
+        return json.dumps(
+            dm.list(client_id=resolved, workflow_type=workflow_type, limit=limit),
+            ensure_ascii=False, indent=2,
+        )
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def get_deliverable(deliverable_id: str) -> str:
+    """
+    Get full details for a deliverable — metadata, outputs, and file paths.
+
+    Args:
+        deliverable_id: Deliverable ID (e.g. 'del_20260330_143000_abc123')
+
+    Returns:
+        JSON with metadata + full workflow outputs
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.deliverable_manager import load_deliverable_manager
+        dm = load_deliverable_manager()
+        return json.dumps(dm.get(deliverable_id), ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def update_deliverable_performance(deliverable_id: str, metrics_json: str) -> str:
+    """
+    Update performance metrics for a deliverable after publishing.
+    Metrics are stored and fed back into the weekly optimization cycle.
+
+    Args:
+        deliverable_id: Deliverable ID
+        metrics_json:   JSON string of metrics (e.g. '{"views": 15400, "engagement_rate": 0.092}')
+
+    Returns:
+        JSON confirmation with updated metadata
+    """
+    try:
+        sys.path.insert(0, str(AGENCY_DIR))
+        from core.deliverable_manager import load_deliverable_manager
+        dm      = load_deliverable_manager()
+        metrics = json.loads(metrics_json) if metrics_json.strip() else {}
+        meta    = dm.update_performance(deliverable_id, metrics)
+        return json.dumps({
+            "updated":       True,
+            "deliverable_id": deliverable_id,
+            "performance":   meta.performance,
+        }, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+# ─── LEARNING + INTELLIGENCE BRIDGE ─────────────────────────────────────────
+
+@mcp.tool()
+def run_daily_analysis(client_id: str) -> str:
+    """
+    Run the daily performance analysis for a client via the learning server.
+
+    Generates insights from recent calendar, learnings, and performance data.
+    Automatically stores top insights to ChromaDB for future use.
+
+    Args:
+        client_id: Client identifier (e.g. 'refine', 'lubina_blanca')
+
+    Returns:
+        JSON analysis report with insights, content opportunities, and action items
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    try:
+        from learning_server import daily_analysis
+        return daily_analysis(resolve_client_id(client_id))
+    except Exception as e:
+        return json.dumps({"error": str(e), "client_id": client_id})
+
+
+@mcp.tool()
+def run_weekly_optimization(client_id: str) -> str:
+    """
+    Run the weekly optimization analysis for a client via the learning server.
+
+    Aggregates daily analyses from the past 7 days, identifies trends,
+    and generates strategic recommendations for the coming week.
+
+    Args:
+        client_id: Client identifier
+
+    Returns:
+        JSON weekly report with top wins, improvements, and next-week priorities
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    try:
+        from learning_server import weekly_optimization
+        return weekly_optimization(resolve_client_id(client_id))
+    except Exception as e:
+        return json.dumps({"error": str(e), "client_id": client_id})
+
+
+@mcp.tool()
+def run_content_gap_detection(client_id: str) -> str:
+    """
+    Detect content gaps for a client — themes and services with little/no coverage.
+
+    Args:
+        client_id: Client identifier
+
+    Returns:
+        JSON with underrepresented themes, missing service content, and recommended posts
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR / "mcp-servers"))
+    try:
+        from learning_server import detect_content_gaps
+        return detect_content_gaps(resolve_client_id(client_id))
+    except Exception as e:
+        return json.dumps({"error": str(e), "client_id": client_id})
+
+
+@mcp.tool()
+def agency_dashboard() -> str:
+    """
+    Return a comprehensive real-time system dashboard.
+
+    Includes:
+      - Workflow counts by state (pending, running, completed, failed, etc.)
+      - Pending approval queue count
+      - Autonomous draft count (low-confidence outputs awaiting manual review)
+      - Tool usage summary for the last 7 days
+      - Agent activity summary for the last 24 hours
+
+    Returns:
+        JSON dashboard object
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.observability import get_observer
+        obs = get_observer()
+        return json.dumps(obs.agency_dashboard(), indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def workflow_logs(workflow_id: str, last_n: int = 50) -> str:
+    """
+    Return the full event log for a specific workflow.
+
+    Streams all state transitions, step starts/completions, approvals,
+    and errors for a given workflow ID.
+
+    Args:
+        workflow_id: Workflow UUID (e.g. "wf_20260330_143022_abc123")
+        last_n:      Number of most recent events to return (0 = all)
+
+    Returns:
+        JSON with event_count and events array
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.observability import get_observer
+        obs = get_observer()
+        return json.dumps(obs.workflow_logs(workflow_id, last_n), indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e), "workflow_id": workflow_id})
+
+
+@mcp.tool()
+def agent_activity_report(agent_id: str = "", hours: int = 24) -> str:
+    """
+    Return agent activity for the last N hours.
+
+    Shows action counts, success rates, average duration, and recent actions
+    per agent (or for a specific agent if agent_id is provided).
+
+    Args:
+        agent_id: Filter to a specific agent ID (empty = all agents)
+        hours:    Look-back window in hours (default: 24)
+
+    Returns:
+        JSON with per-agent stats and summary
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.observability import get_observer
+        obs = get_observer()
+        return json.dumps(obs.agent_activity_report(agent_id, hours), indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def tool_usage_report(days: int = 7) -> str:
+    """
+    Return tool call statistics for the last N days.
+
+    Shows call counts, success rates, and average duration per tool,
+    ranked by usage frequency. Useful for identifying heavily-used or
+    failure-prone tools.
+
+    Args:
+        days: Look-back window in days (default: 7)
+
+    Returns:
+        JSON with per-tool stats, ranked by call count
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.observability import get_observer
+        obs = get_observer()
+        return json.dumps(obs.tool_usage_report(days), indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def run_autonomous_task(schedule_name: str, client_ids: str = "") -> str:
+    """
+    Trigger an autonomous planning task for all (or specified) active clients.
+
+    Runs the AutonomyEngine for the given schedule:
+      - "daily"   → daily_analysis() for each client
+      - "weekly"  → weekly_strategy_update() + content_gap_detection()
+      - "monthly" → campaign_opportunity_detection()
+
+    High-confidence results (≥ 0.75) are submitted to the approval queue
+    with trigger_source="autonomous". Low-confidence results are saved
+    as drafts in memory/outputs/ for manual review.
+
+    Args:
+        schedule_name: "daily" | "weekly" | "monthly"
+        client_ids:    Comma-separated client IDs to run for (empty = all active clients)
+
+    Returns:
+        JSON with results per client
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.autonomy_engine import load_autonomy_engine
+        engine = load_autonomy_engine()
+        ids = [c.strip() for c in client_ids.split(",") if c.strip()] if client_ids else None
+        result = engine.run_scheduled(schedule_name, ids)
+        return json.dumps(result, indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e), "schedule_name": schedule_name})
+
+
+@mcp.tool()
+def list_autonomous_drafts(client_id: str = "") -> str:
+    """
+    List autonomous drafts saved to memory/outputs/ (outputs below confidence threshold).
+
+    These are planning outputs that the autonomy engine generated but did NOT submit
+    to the approval queue because confidence < 0.75. They require manual review.
+
+    Args:
+        client_id: Filter by client ID (empty = all clients)
+
+    Returns:
+        JSON array of draft metadata sorted by most recent first
+    """
+    import sys
+    sys.path.insert(0, str(AGENCY_DIR))
+    sys.path.insert(0, str(AGENCY_DIR / "core"))
+    try:
+        from core.autonomy_engine import load_autonomy_engine
+        engine = load_autonomy_engine()
+        drafts = engine.list_drafts(resolve_client_id(client_id) if client_id else "")
+        return json.dumps(drafts, indent=2, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 if __name__ == "__main__":
     mcp.run()

@@ -1,7 +1,11 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════
 #  Cell Agency — Master Startup Script
-#  Starts all 4 MCP servers + OpenClaw gateway
+#  Starts all 10 MCP servers + OpenClaw gateway
+#
+#  MCP Servers (10):
+#    agency, social, ads, design, content, video,
+#    asset, document, web, learning
 #
 #  Usage:
 #    ./start_agency.sh           — start everything
@@ -83,9 +87,9 @@ check_env() {
 
 # ── Python detection ───────────────────────────────────────────────
 find_python() {
-    # Try uv run first, then pyenv, then system python
-    if command -v uv &>/dev/null; then
-        echo "uv run python"
+    # Prefer .venv/bin/python (already has all deps installed, no build step)
+    if [ -f "$AGENCY_DIR/.venv/bin/python" ]; then
+        echo "$AGENCY_DIR/.venv/bin/python"
         return
     fi
     if [ -f "$HOME/.pyenv/shims/python3" ]; then
@@ -99,15 +103,29 @@ PYTHON=$(find_python)
 info "Python: $PYTHON"
 
 # ── MCP server management ──────────────────────────────────────────
-MCP_SERVERS=("agency" "social" "ads" "design")
+MCP_SERVERS=("agency" "social" "ads" "design" "content" "video" "asset" "document" "web" "learning")
 MCP_SCRIPTS=(
     "mcp-servers/agency_server.py"
     "mcp-servers/social_server.py"
     "mcp-servers/ads_server.py"
     "mcp-servers/design_server.py"
+    "mcp-servers/content_server.py"
+    "mcp-servers/video_server.py"
+    "mcp-servers/asset_server.py"
+    "mcp-servers/document_server.py"
+    "mcp-servers/web_server.py"
+    "mcp-servers/learning_server.py"
 )
 
-mkdir -p "$PID_DIR" "$LOG_DIR"
+mkdir -p "$PID_DIR" "$LOG_DIR" \
+    "$AGENCY_DIR/logs/workflow_logs" \
+    "$AGENCY_DIR/logs/agent_logs" \
+    "$AGENCY_DIR/logs/tool_usage" \
+    "$AGENCY_DIR/memory/workflows" \
+    "$AGENCY_DIR/memory/outputs" \
+    "$AGENCY_DIR/approval_queue" \
+    "$AGENCY_DIR/deliverables" \
+    "$AGENCY_DIR/analytics"
 
 is_running() {
     local server="$1"
@@ -272,7 +290,7 @@ print(r.to_markdown())
             echo -e "${BOLD}Cell Agency is running 🚀${RESET}"
             echo "═══════════════════════════════════════"
             echo "Telegram bot: active"
-            echo "MCP servers:  4 running"
+            echo "MCP servers:  10 running"
             echo "Logs:         memory/logs/"
             echo "PIDs:         memory/pids/"
             echo ""

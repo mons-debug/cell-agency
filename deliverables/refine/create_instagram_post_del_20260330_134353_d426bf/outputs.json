@@ -1,0 +1,22 @@
+{
+  "query_learnings": {
+    "status": "ok",
+    "note": "Query past learnings before creating content"
+  },
+  "choose_assets": {
+    "status": "ok",
+    "note": "Select best assets for this post"
+  },
+  "generate_caption": {
+    "status": "ok",
+    "note": "Generate caption with hook, body, CTA, and hashtags"
+  },
+  "qa_review": {
+    "status": "ok",
+    "note": "QA review: brand tone, sensitivity, CTA, hashtags"
+  },
+  "approval": {
+    "status": "ok",
+    "note": "Awaiting owner approval before publishing"
+  }
+}

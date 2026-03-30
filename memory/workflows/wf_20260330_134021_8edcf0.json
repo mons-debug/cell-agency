@@ -1,0 +1,151 @@
+{
+  "id": "wf_20260330_134021_8edcf0",
+  "name": "create_instagram_post",
+  "client_id": "refine",
+  "steps": [
+    {
+      "name": "query_learnings",
+      "agent": "strategy_agent",
+      "tool": "builtin.noop",
+      "description": "Query past learnings before creating content",
+      "inputs": {
+        "query": "best performing instagram posts {topic}",
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Query past learnings before creating content"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:40:21.255404",
+      "completed_at": "2026-03-30T13:40:21.257380",
+      "status": "completed"
+    },
+    {
+      "name": "choose_assets",
+      "agent": "asset_manager",
+      "tool": "builtin.noop",
+      "description": "Select best assets for this post",
+      "inputs": {
+        "client_id": "{client_id}",
+        "brief": "{topic}",
+        "count": 3
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Select best assets for this post"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:40:21.259326",
+      "completed_at": "2026-03-30T13:40:21.260965",
+      "status": "completed"
+    },
+    {
+      "name": "generate_caption",
+      "agent": "content_agent",
+      "tool": "builtin.noop",
+      "description": "Generate caption with hook, body, CTA, and hashtags",
+      "inputs": {
+        "client_id": "{client_id}",
+        "topic": "{topic}",
+        "platform": "instagram",
+        "language": "{language}",
+        "tone": "{tone}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Generate caption with hook, body, CTA, and hashtags"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:40:21.263119",
+      "completed_at": "2026-03-30T13:40:21.265197",
+      "status": "completed"
+    },
+    {
+      "name": "qa_review",
+      "agent": "nadia",
+      "tool": "builtin.noop",
+      "description": "QA review: brand tone, sensitivity, CTA, hashtags",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "QA review: brand tone, sensitivity, CTA, hashtags"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:40:21.267366",
+      "completed_at": "2026-03-30T13:40:21.269528",
+      "status": "completed"
+    },
+    {
+      "name": "approval",
+      "agent": "nadia",
+      "tool": "builtin.noop",
+      "description": "Awaiting owner approval before publishing",
+      "inputs": {},
+      "requires_approval": true,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Awaiting owner approval before publishing"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:40:21.272692",
+      "completed_at": "2026-03-30T13:40:21.274644",
+      "status": "completed"
+    }
+  ],
+  "state": "completed",
+  "current_step": 5,
+  "inputs": {
+    "client_id": "refine",
+    "topic": "test"
+  },
+  "outputs": {
+    "query_learnings": {
+      "status": "ok",
+      "note": "Query past learnings before creating content"
+    },
+    "choose_assets": {
+      "status": "ok",
+      "note": "Select best assets for this post"
+    },
+    "generate_caption": {
+      "status": "ok",
+      "note": "Generate caption with hook, body, CTA, and hashtags"
+    },
+    "qa_review": {
+      "status": "ok",
+      "note": "QA review: brand tone, sensitivity, CTA, hashtags"
+    },
+    "approval": {
+      "status": "ok",
+      "note": "Awaiting owner approval before publishing"
+    }
+  },
+  "trigger_source": "manual",
+  "created_at": "2026-03-30T13:40:21.248208",
+  "updated_at": "2026-03-30T13:40:21.280083",
+  "completed_at": "2026-03-30T13:40:21.280068",
+  "error": null,
+  "approval_task_id": null
+}

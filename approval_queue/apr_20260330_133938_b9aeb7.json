@@ -1,0 +1,22 @@
+{
+  "task_id": "apr_20260330_133938_b9aeb7",
+  "action": "publish_instagram_post",
+  "client_id": "refine",
+  "draft_output": {
+    "caption": "Edited: Amazing laser treatment!",
+    "hashtags": [
+      "#laser",
+      "#beauty"
+    ]
+  },
+  "status": "edited",
+  "confidence": 0.91,
+  "workflow_id": "wf_20260330_133938_abbb1e",
+  "workflow_step": null,
+  "trigger_source": "manual",
+  "notes": "",
+  "feedback": null,
+  "created_at": "2026-03-30T13:39:38.088815",
+  "updated_at": "2026-03-30T13:39:38.090083",
+  "resolved_at": null
+}

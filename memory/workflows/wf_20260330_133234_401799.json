@@ -1,0 +1,55 @@
+{
+  "id": "wf_20260330_133234_401799",
+  "name": "daily_analysis",
+  "client_id": "refine",
+  "steps": [
+    {
+      "name": "run_analysis",
+      "agent": "strategy_agent",
+      "tool": "learning.daily_analysis",
+      "description": "Run daily performance analysis and store insights",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": null,
+      "error": null,
+      "started_at": null,
+      "completed_at": null,
+      "status": "pending"
+    },
+    {
+      "name": "detect_gaps",
+      "agent": "strategy_agent",
+      "tool": "learning.detect_content_gaps",
+      "description": "Detect content gaps after analysis",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": null,
+      "error": null,
+      "started_at": null,
+      "completed_at": null,
+      "status": "pending"
+    }
+  ],
+  "state": "pending",
+  "current_step": 0,
+  "inputs": {
+    "client_id": "refine"
+  },
+  "outputs": {},
+  "trigger_source": "manual",
+  "created_at": "2026-03-30T13:32:34.095361",
+  "updated_at": "2026-03-30T13:32:34.095375",
+  "completed_at": null,
+  "error": null,
+  "approval_task_id": null
+}

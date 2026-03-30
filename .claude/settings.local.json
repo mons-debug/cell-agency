@@ -19,7 +19,22 @@
       "Read(//Users/mac/.pyenv/versions/3.11.9/bin/**)",
       "Bash(/Users/mac/agency/.venv/bin/python3 -c \"import fastmcp; print\\(''''fastmcp OK''''\\)\")",
       "Read(//Users/mac/**)",
-      "Bash(/Users/mac/agency/.venv/bin/python3 -c \":*)"
+      "Bash(/Users/mac/agency/.venv/bin/python3 -c \":*)",
+      "Bash(.venv/bin/python3 -c \":*)",
+      "Bash(command -v openclaw)",
+      "Bash(grep -r \"port\\\\|uvicorn\\\\|flask\\\\|fastapi\\\\|http.server\\\\|SimpleHTTP\\\\|serve\\\\b\" /Users/mac/agency/mcp-servers/*.py)",
+      "Bash(ls /Users/mac/agency/*.py /Users/mac/agency/run_*.py /Users/mac/agency/infra/*.py)",
+      "Bash(grep -n \"mcp.run\\\\|\\\\.run\\(\" /Users/mac/agency/mcp-servers/*.py)",
+      "Bash(openclaw gateway:*)",
+      "Bash(openclaw --help)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); g=d.get\\(''''gateway'''',{}\\); print\\(''''auth:'''', g.get\\(''''auth''''\\)\\); print\\(''''token:'''', g.get\\(''''token'''',''''\\(none\\)''''\\)\\); print\\(''''bind:'''', g.get\\(''''bind''''\\)\\)\")",
+      "Bash(uv add:*)",
+      "Bash(uv pip:*)",
+      "Bash(uv run:*)",
+      "Bash(.venv/bin/python -c \"import openai; print\\(''openai'', openai.__version__\\)\")",
+      "Bash(.venv/bin/python -c \":*)",
+      "Bash(./start_agency.sh --restart)"
     ]
   }
 }

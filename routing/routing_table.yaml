@@ -550,6 +550,163 @@ routes:
     priority: 79
     confidence_floor: 0.4
 
+  # ── WORKFLOW ENGINE — Instagram Post ─────────────────────────────────────────
+
+  - skill: content-forge
+    triggers:
+      keywords:
+        - "create instagram post"
+        - "make a post"
+        - "make post"
+        - "create post for"
+        - "post about"
+        - "instagram post about"
+        - "create a post"
+        - "new instagram post"
+      regex:
+        - "create.*(instagram|ig).*(post|content)"
+        - "make.*(post|instagram).*(for|about)"
+        - "(post|instagram).*(about|for|on).+"
+    workflow: create_instagram_post
+    crew: creative
+    task: write_instagram_caption
+    agent: content_agent
+    required_inputs:
+      - client_id
+      - topic
+    optional_inputs:
+      - language
+      - tone
+      - format
+    approval_required: true
+    priority: 95
+    confidence_floor: 0.45
+
+  # ── WORKFLOW ENGINE — Create Reel ─────────────────────────────────────────────
+
+  - skill: content-forge
+    triggers:
+      keywords:
+        - "create reel"
+        - "make a reel"
+        - "reel about"
+        - "instagram reel"
+        - "make reel"
+        - "create a reel"
+        - "new reel"
+        - "reel for"
+      regex:
+        - "(create|make|produce|film).*(reel)"
+        - "reel.*(about|for|on).+"
+    workflow: create_reel
+    crew: creative
+    task: content_creation
+    agent: video_agent
+    required_inputs:
+      - client_id
+      - topic
+    optional_inputs:
+      - language
+      - duration_s
+    approval_required: true
+    priority: 96
+    confidence_floor: 0.45
+
+  # ── WORKFLOW ENGINE — Content Planning ───────────────────────────────────────
+
+  - skill: calendar-brain
+    triggers:
+      keywords:
+        - "plan content"
+        - "plan next week"
+        - "content calendar"
+        - "content plan for"
+        - "plan 2 weeks"
+        - "plan a week"
+        - "plan posts"
+        - "2-week plan"
+        - "weekly content plan"
+        - "plan the week"
+        - "plan this month"
+        - "content for next week"
+      regex:
+        - "plan.*(content|post|week|month)"
+        - "content.*(plan|calendar|schedule).*(for|next|this)"
+        - "(week|month).*(content|post|plan)"
+    workflow: content_planning
+    crew: strategy
+    task: create_campaign_strategy
+    agent: strategy_agent
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - goal
+      - weeks
+      - platforms
+    approval_required: true
+    priority: 94
+    confidence_floor: 0.40
+
+  # ── WORKFLOW ENGINE — Website Creation ────────────────────────────────────────
+
+  - skill: dev-hub
+    triggers:
+      keywords:
+        - "build website"
+        - "create website"
+        - "make website"
+        - "landing page for"
+        - "build site"
+        - "create site"
+        - "build a website"
+        - "build landing page"
+        - "website for"
+        - "new website"
+      regex:
+        - "(build|create|make|generate).*(website|site|landing.page|web)"
+        - "(website|site).*(for|build|create)"
+    workflow: website_creation
+    crew: dev
+    task: build_website
+    agent: design_agent
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - site_type
+      - pages
+    approval_required: true
+    priority: 93
+    confidence_floor: 0.50
+
+  # ── WORKFLOW ENGINE — Generate Report ────────────────────────────────────────
+
+  - skill: report-builder
+    triggers:
+      keywords:
+        - "generate report"
+        - "weekly report"
+        - "monthly report"
+        - "performance report"
+        - "send report"
+        - "analytics report"
+        - "create report"
+        - "build report"
+      regex:
+        - "(generate|create|make|build|send).*(report|summary|overview)"
+        - "(weekly|monthly|daily|campaign).*(report|summary)"
+    workflow: generate_report
+    crew: marketing_ops
+    task: generate_full_report
+    agent: content_agent
+    required_inputs:
+      - client_id
+    optional_inputs:
+      - report_type
+      - period
+    approval_required: false
+    priority: 92
+    confidence_floor: 0.40
+
 # Default fallback when no route matches
 fallback:
   crew: management

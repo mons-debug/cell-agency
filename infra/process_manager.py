@@ -31,9 +31,10 @@ LOG_DIR    = AGENCY_DIR / "memory" / "logs"
 
 # ── Server definitions ─────────────────────────────────────────────────────────
 MCP_SERVERS: dict[str, dict] = {
+    # ── Original 4 servers ──────────────────────────────────────────────────────
     "agency": {
         "script": "mcp-servers/agency_server.py",
-        "description": "Core agency tools (files, memory, routing, registry)",
+        "description": "Core agency tools (files, memory, routing, registry, learning bridge)",
         "port": None,  # FastMCP stdio transport
     },
     "social": {
@@ -49,6 +50,37 @@ MCP_SERVERS: dict[str, dict] = {
     "design": {
         "script": "mcp-servers/design_server.py",
         "description": "Gemini and Firefly image generation tools",
+        "port": None,
+    },
+    # ── New 6 servers (Phase 1) ──────────────────────────────────────────────────
+    "content": {
+        "script": "mcp-servers/content_server.py",
+        "description": "Content strategy, captions, plans, articles, ad copy",
+        "port": None,
+    },
+    "video": {
+        "script": "mcp-servers/video_server.py",
+        "description": "Reel concept generation, video editing stubs",
+        "port": None,
+    },
+    "asset": {
+        "script": "mcp-servers/asset_server.py",
+        "description": "Asset search, scoring, tagging, listing (ChromaDB)",
+        "port": None,
+    },
+    "document": {
+        "script": "mcp-servers/document_server.py",
+        "description": "Document and report generation (proposals, briefs, weekly reports)",
+        "port": None,
+    },
+    "web": {
+        "script": "mcp-servers/web_server.py",
+        "description": "Next.js website generation and page updates",
+        "port": None,
+    },
+    "learning": {
+        "script": "mcp-servers/learning_server.py",
+        "description": "Intelligence layer: inspiration, learnings, daily/weekly analysis",
         "port": None,
     },
 }
@@ -210,7 +242,7 @@ class ProcessManager:
         return self.start(server)
 
     def start_all(self) -> list[ServerStatus]:
-        """Start all 4 MCP servers."""
+        """Start all 10 MCP servers."""
         results = []
         for server in MCP_SERVERS:
             try:
@@ -269,7 +301,7 @@ class ProcessManager:
             )
 
     def status_all(self) -> list[ServerStatus]:
-        """Return status of all 4 servers."""
+        """Return status of all 10 servers."""
         return [self.status(s) for s in MCP_SERVERS]
 
     def tail_log(self, server: str, lines: int = 30) -> str:

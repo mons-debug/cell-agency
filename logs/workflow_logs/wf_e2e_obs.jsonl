@@ -1,0 +1,3 @@
+{"ts": "2026-03-30T19:33:48.290847", "workflow_id": "wf_e2e_obs", "event": "state_changed", "data": {"from": "pending", "to": "running"}}
+{"ts": "2026-03-30T19:33:48.291503", "workflow_id": "wf_e2e_obs", "event": "step_started", "data": {"step": "generate_caption"}}
+{"ts": "2026-03-30T19:33:48.291901", "workflow_id": "wf_e2e_obs", "event": "step_completed", "data": {"step": "generate_caption", "duration_ms": 800}}

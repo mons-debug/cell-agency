@@ -1,0 +1,171 @@
+{
+  "id": "wf_20260330_133307_d14499",
+  "name": "create_instagram_post",
+  "client_id": "refine",
+  "steps": [
+    {
+      "name": "query_learnings",
+      "agent": "strategy_agent",
+      "tool": "builtin.noop",
+      "description": "Query past learnings before creating content",
+      "inputs": {
+        "query": "best performing instagram posts {topic}",
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Query past learnings before creating content"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:33:07.799650",
+      "completed_at": "2026-03-30T13:33:07.803681",
+      "status": "completed"
+    },
+    {
+      "name": "choose_assets",
+      "agent": "asset_manager",
+      "tool": "builtin.noop",
+      "description": "Select best assets for this post",
+      "inputs": {
+        "client_id": "{client_id}",
+        "brief": "{topic}",
+        "count": 3
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Select best assets for this post"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:33:07.812126",
+      "completed_at": "2026-03-30T13:33:07.816228",
+      "status": "completed"
+    },
+    {
+      "name": "generate_caption",
+      "agent": "content_agent",
+      "tool": "builtin.noop",
+      "description": "Generate caption with hook, body, CTA, and hashtags",
+      "inputs": {
+        "client_id": "{client_id}",
+        "topic": "{topic}",
+        "platform": "instagram",
+        "language": "{language}",
+        "tone": "{tone}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Generate caption with hook, body, CTA, and hashtags"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:33:07.819162",
+      "completed_at": "2026-03-30T13:33:07.821222",
+      "status": "completed"
+    },
+    {
+      "name": "qa_review",
+      "agent": "nadia",
+      "tool": "builtin.qa_review",
+      "description": "QA review: brand tone, sensitivity, CTA, hashtags",
+      "inputs": {
+        "client_id": "{client_id}"
+      },
+      "requires_approval": false,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "qa_score": 10.0,
+        "checks": {
+          "brand_colors_match": true,
+          "language_correct": true,
+          "cta_present": true,
+          "sensitivity_ok": true,
+          "format_correct": true
+        },
+        "passed": true,
+        "reviewer": "nadia",
+        "notes": "Automated QA review — manual review recommended for final approval"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:33:07.823636",
+      "completed_at": "2026-03-30T13:33:07.826556",
+      "status": "completed"
+    },
+    {
+      "name": "approval",
+      "agent": "nadia",
+      "tool": "builtin.noop",
+      "description": "Awaiting owner approval before publishing",
+      "inputs": {},
+      "requires_approval": true,
+      "retry_count": 0,
+      "max_retries": 3,
+      "timeout_s": 120,
+      "output": {
+        "status": "ok",
+        "note": "Awaiting owner approval before publishing"
+      },
+      "error": null,
+      "started_at": "2026-03-30T13:33:07.830276",
+      "completed_at": "2026-03-30T13:33:07.833279",
+      "status": "completed"
+    }
+  ],
+  "state": "completed",
+  "current_step": 5,
+  "inputs": {
+    "client_id": "refine",
+    "topic": "laser hair removal",
+    "language": "french",
+    "tone": "professional"
+  },
+  "outputs": {
+    "query_learnings": {
+      "status": "ok",
+      "note": "Query past learnings before creating content"
+    },
+    "choose_assets": {
+      "status": "ok",
+      "note": "Select best assets for this post"
+    },
+    "generate_caption": {
+      "status": "ok",
+      "note": "Generate caption with hook, body, CTA, and hashtags"
+    },
+    "qa_review": {
+      "qa_score": 10.0,
+      "checks": {
+        "brand_colors_match": true,
+        "language_correct": true,
+        "cta_present": true,
+        "sensitivity_ok": true,
+        "format_correct": true
+      },
+      "passed": true,
+      "reviewer": "nadia",
+      "notes": "Automated QA review — manual review recommended for final approval"
+    },
+    "approval": {
+      "status": "ok",
+      "note": "Awaiting owner approval before publishing"
+    }
+  },
+  "trigger_source": "manual",
+  "created_at": "2026-03-30T13:33:07.775516",
+  "updated_at": "2026-03-30T13:33:07.836614",
+  "completed_at": "2026-03-30T13:33:07.836595",
+  "error": null,
+  "approval_task_id": null
+}

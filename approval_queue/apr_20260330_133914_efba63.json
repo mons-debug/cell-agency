@@ -1,0 +1,19 @@
+{
+  "task_id": "apr_20260330_133914_efba63",
+  "action": "publish_instagram_post",
+  "client_id": "refine",
+  "draft_output": {
+    "caption": "Test caption",
+    "image_path": "clients/refine/images/test.jpg"
+  },
+  "status": "pending",
+  "confidence": 0.88,
+  "workflow_id": null,
+  "workflow_step": null,
+  "trigger_source": "manual",
+  "notes": "Educational reel about laser hair removal",
+  "feedback": null,
+  "created_at": "2026-03-30T13:39:14.968530",
+  "updated_at": "2026-03-30T13:39:14.968544",
+  "resolved_at": null
+}

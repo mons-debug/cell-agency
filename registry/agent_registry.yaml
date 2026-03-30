@@ -15,9 +15,6 @@
 meta:
   total_agents: 22
   departments: [management, strategy, creative, dev, marketing_ops]
-  llm_map:
-    gpt-4o: claude-sonnet-4-6
-    gpt-4o-mini: claude-haiku-4-5-20251001
 
 agents:
 

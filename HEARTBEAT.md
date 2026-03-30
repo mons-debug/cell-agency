@@ -38,6 +38,33 @@ Send Moncef a brief summary:
 - Check if ChromaDB is accessible → log issue if not
 - Check pending approval queue → remind Moncef if item is >2 hours old without response
 
+## Autonomous Planning Schedule
+
+These tasks are executed by the **AutonomyEngine** (`core/autonomy_engine.py`).
+To trigger manually: call `run_autonomous_task(schedule_name)` via MCP.
+
+### 08:00 Daily — Autonomous Daily Analysis
+- Run `run_autonomous_task("daily")` for all active clients
+- Performs: performance snapshot + content gap detection
+- Confidence ≥ 0.75 → submitted to approval queue with `trigger_source="autonomous"`
+- Confidence < 0.75 → saved as draft in `memory/outputs/`
+- Check `list_autonomous_drafts()` to review low-confidence outputs
+
+### 09:00 Monday — Autonomous Weekly Strategy
+- Run `run_autonomous_task("weekly")` for all active clients
+- Performs: weekly optimization report + content gap recommendations
+- High-confidence results go to approval queue for Moncef's review
+
+### 09:00 1st of Month — Campaign Opportunity Detection
+- Run `run_autonomous_task("monthly")` for all active clients
+- Performs: seasonal + local opportunity detection (Morocco context)
+- Always saved as draft (confidence capped at 0.70) — manual review required
+
+### Governance Rules (Autonomous Mode)
+- Manual commands ALWAYS override autonomous tasks
+- Autonomous outputs NEVER auto-execute — they enter approval queue or drafts only
+- Confidence threshold: ≥ 0.75 → approval queue; < 0.75 → drafts
+
 ## Important Rules
 
 - Do NOT send messages between 23:00 and 07:00 Morocco time (UTC+1)

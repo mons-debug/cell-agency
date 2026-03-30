@@ -59,14 +59,8 @@ class AgentProfile:
 
     @property
     def resolved_llm(self) -> str:
-        """Resolve gpt-4o → claude-sonnet-4-6, gpt-4o-mini → claude-haiku-4-5-20251001."""
-        llm_map = {
-            "gpt-4o": "claude-sonnet-4-6",
-            "gpt-4o-mini": "claude-haiku-4-5-20251001",
-            "gpt-4": "claude-sonnet-4-6",
-            "gpt-3.5-turbo": "claude-haiku-4-5-20251001",
-        }
-        return llm_map.get(self.llm, self.llm)
+        """Return the model ID as-is — gpt-4o and gpt-4o-mini are the real model IDs."""
+        return self.llm
 
     @property
     def tool_namespaces(self) -> list[str]:

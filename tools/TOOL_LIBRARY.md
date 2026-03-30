@@ -1,671 +1,299 @@
-# Cell Agency — Complete Tool Library
+# Cell Agency — Tool Library
 
-> Single source of truth for all tools in the agency system.
-> Every tool listed here maps to a real implementation in an MCP server or CrewAI wrapper.
-> Update this file whenever a tool is added, renamed, or deprecated.
-
-**Last updated:** 2026-03-29
-**Total tools:** 104 (33 CrewAI wrappers + 71 MCP tools)
-**Stubs:** 2 (Google Ads — needs OAuth2)
-**Unreferenced before this update:** 11 (now all wired to agents)
+> Complete reference for all 10 MCP servers and their tools.
+> Last updated: 2026-03-30
 
 ---
 
-## Naming Conventions
+## Architecture
 
-| Layer | Convention | Example |
-|-------|-----------|---------|
-| YAML agent tools list | `namespace.function_name` | `agency.read_file` |
-| CrewAI `@tool()` names | `function_name_tool` | `read_file_tool` |
-| MCP `@mcp.tool()` names | `function_name` (no suffix) | `agency_read_file` |
+```
+10 MCP Servers → CrewAI wrappers (crew_tools.py) → 6 Agents
+```
 
-**Namespaces:** `agency.*` · `social.*` · `ads.*` · `design.*` · `deploy.*`
-
-**Note on duplicates:** File ops, brand vault, calendar, memory, and web search tools exist in both
-`mcp-servers/agency_server.py` (for OpenClaw/MCP sessions) and `tools/crew_tools.py` (for CrewAI
-direct execution). This is intentional — two runtime contexts, same underlying logic.
-
-**Note on `memory_store` signature difference:**
-- CrewAI wrapper (`crew_tools.py`): takes `metadata_json: str` — JSON string, because CrewAI tools must use primitive types
-- MCP version (`agency_server.py`): takes `metadata: Optional[dict]` — native dict, because MCP handles serialization
+All tools are callable via:
+1. **MCP protocol** — Claude / OpenClaw connects directly
+2. **CrewAI `@tool()` wrappers** — agents use them inside crews
+3. **Direct Python import** — for workflow engine step execution
 
 ---
 
-## `agency.*` — Core Agency Tools
+## Server Map
 
-Source: `mcp-servers/agency_server.py` | CrewAI wrappers: `tools/crew_tools.py`
-
-### agency.read_file
-- **MCP fn:** `agency_read_file(path: str) → str`
-- **CrewAI fn:** `read_file_tool(path: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** content_creator, campaign_strategist, seo_specialist, tool_engineer, client_manager, reporting_agent
-
-### agency.write_file
-- **MCP fn:** `agency_write_file(path: str, content: str, overwrite: bool = True) → str`
-- **CrewAI fn:** `write_file_tool(path: str, content: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** campaign_strategist, seo_specialist, audience_analyst, content_creator, brand_designer, video_editor, frontend_developer, backend_developer, tool_engineer, client_manager, email_marketer, lead_gen_specialist, reporting_agent, analytics_agent
-
-### agency.append_file
-- **MCP fn:** `agency_append_file(path: str, content: str) → str`
-- **CrewAI fn:** `append_file_tool(path: str, content: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** (available, use for non-overwriting writes)
-
-### agency.list_dir
-- **MCP fn:** `agency_list_dir(path: str, pattern: str = "*") → list[str]`
-- **CrewAI fn:** `list_dir_tool(path: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** tool_engineer
-
-### agency.create_dir
-- **MCP fn:** `agency_create_dir(path: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** frontend_developer, backend_developer
-
-### agency.delete_file
-- **MCP fn:** `agency_delete_file(path: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** (available for cleanup operations)
-
-### agency.file_exists
-- **MCP fn:** `agency_file_exists(path: str) → bool`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** (available for conditional logic)
-
-### agency.read_brand_vault
-- **MCP fn:** `read_brand_vault(client_id: str) → str`
-- **CrewAI fn:** `read_brand_vault_tool(client_id: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, router, qa_gate, research_analyst, content_creator, brand_designer, graphic_designer, audience_analyst, ads_manager, client_manager, email_marketer
-
-### agency.update_brand_vault
-- **MCP fn:** `update_brand_vault(client_id: str, content: str) → str`
-- **CrewAI fn:** `update_brand_vault_tool(client_id: str, content: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** brand_designer
-
-### agency.list_clients
-- **MCP fn:** `list_clients() → list[dict]`
-- **CrewAI fn:** `list_clients_tool() → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, router, client_manager
-
-### agency.create_client
-- **MCP fn:** `create_client(client_id: str, name: str, industry: str, location: str = "") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** client_manager (for new client onboarding)
-
-### agency.read_calendar
-- **MCP fn:** `read_calendar(client_id: str) → str`
-- **CrewAI fn:** `read_calendar_tool(client_id: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, campaign_strategist, content_creator, social_media_manager
-
-### agency.add_to_calendar
-- **MCP fn:** `add_to_calendar(client_id: str, entry: str) → str`
-- **CrewAI fn:** `add_to_calendar_tool(client_id: str, entry: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** campaign_strategist, social_media_manager
-
-### agency.memory_store
-- **MCP fn:** `memory_store(collection: str, doc_id: str, content: str, metadata: Optional[dict] = None) → str`
-- **CrewAI fn:** `memory_store_tool(collection: str, doc_id: str, content: str, metadata_json: str = "{}") → str`
-- **⚠️ Signature note:** CrewAI version uses `metadata_json: str` (JSON string) — intentional, CrewAI requires primitive types
-- **Env vars:** none (ChromaDB local)
-- **Status:** ✅ working
-- **Used by:** research_analyst, seo_specialist, analytics_agent, lead_gen_specialist
-
-### agency.memory_search
-- **MCP fn:** `memory_search(collection: str, query: str, n_results: int = 5) → list[dict]`
-- **CrewAI fn:** `memory_search_tool(collection: str, query: str, n_results: int = 5) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, research_analyst, campaign_strategist, content_creator, audience_analyst, email_marketer
-
-### agency.memory_get
-- **MCP fn:** `memory_get(collection: str, doc_id: str) → Optional[dict]`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, analytics_agent *(added 2026-03-28)*
-
-### agency.memory_delete
-- **MCP fn:** `memory_delete(collection: str, doc_id: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** (available for memory management)
-
-### agency.list_memory_collections
-- **MCP fn:** `list_memory_collections() → list[str]`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** (available for debugging)
-
-### agency.search_web
-- **MCP fn:** `search_web(query: str, n_results: int = 5) → list[dict]`
-- **CrewAI fn:** `search_web_tool(query: str, n_results: int = 5) → str`
-- **Env vars:** `SERPER_API_KEY` ⚠️ NOT SET YET
-- **Status:** ✅ implemented (blocked until SERPER_API_KEY is set)
-- **Used by:** research_analyst, seo_specialist, lead_gen_specialist
-
-### agency.search_web_news
-- **MCP fn:** — (no MCP version)
-- **CrewAI fn:** `search_web_news_tool(query: str, n_results: int = 5) → str`
-- **Env vars:** `SERPER_API_KEY` ⚠️ NOT SET YET
-- **Status:** ✅ implemented (blocked until SERPER_API_KEY is set)
-- **Used by:** research_analyst *(added 2026-03-28)*
-
-### agency.fetch_webpage
-- **MCP fn:** `fetch_webpage(url: str) → str`
-- **CrewAI fn:** `fetch_webpage_tool(url: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** research_analyst, seo_specialist, lead_gen_specialist
-
-### agency.run_python
-- **MCP fn:** `run_python(script: str, timeout: int = 30) → dict`
-- **Env vars:** none
-- **Status:** ✅ working (requires approval for production use)
-- **Used by:** backend_developer, devops_agent, tool_engineer
-
-### agency.log_daily
-- **MCP fn:** `log_daily(entry: str) → str`
-- **CrewAI fn:** `log_daily_tool(entry: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, research_analyst, content_creator, ads_manager, social_media_manager, client_manager
-
-### agency.read_daily_log
-- **MCP fn:** `read_daily_log(date_str: str = "") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia (for morning briefing)
+| Server | Script | Purpose |
+|--------|--------|---------|
+| `agency` | `mcp-servers/agency_server.py` | Core hub: files, memory, clients, approvals, observability |
+| `social` | `mcp-servers/social_server.py` | Instagram, Facebook publishing |
+| `ads` | `mcp-servers/ads_server.py` | Meta Ads campaign management |
+| `design` | `mcp-servers/design_server.py` | Image generation and editing |
+| `content` | `mcp-servers/content_server.py` | Captions, strategies, articles, ad copy |
+| `video` | `mcp-servers/video_server.py` | Reel concepts and video briefs |
+| `asset` | `mcp-servers/asset_server.py` | Asset search, tagging, management |
+| `document` | `mcp-servers/document_server.py` | Reports, proposals, briefs |
+| `web` | `mcp-servers/web_server.py` | Website generation and updates |
+| `learning` | `mcp-servers/learning_server.py` | ChromaDB knowledge, inspiration, analytics |
 
 ---
 
-## `social.*` — Instagram & Facebook Tools
+## 1. Agency Server (`agency`)
 
-Source: `mcp-servers/social_server.py`
-**Required env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`, `FACEBOOK_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID` — ⚠️ ALL NOT SET YET
+Core hub — file operations, client registry, memory, approvals, autonomous planning, observability.
 
-### social.ig_create_image_post
-- **MCP fn:** `ig_create_image_post(image_url: str, caption: str, location_id: Optional[str] = None) → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager
+### File Operations
+| Tool | Args | Returns |
+|------|------|---------|
+| `read_file` | `path` | File contents |
+| `write_file` | `path, content` | Confirmation |
+| `append_file` | `path, content` | Confirmation |
+| `list_dir` | `path` | Directory listing |
+| `create_dir` | `path` | Confirmation |
+| `delete_file` | `path` | Confirmation |
+| `file_exists` | `path` | Boolean |
 
-### social.ig_create_carousel_post
-- **MCP fn:** `ig_create_carousel_post(image_urls: list[str], caption: str) → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager
+### Web
+| Tool | Args | Returns |
+|------|------|---------|
+| `web_search` | `query, num_results=5` | Search results JSON |
+| `fetch_url` | `url` | Page content |
 
-### social.ig_schedule_post
-- **MCP fn:** `ig_schedule_post(image_url: str, caption: str, publish_time_iso: str) → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager
+### Client Registry
+| Tool | Args | Returns |
+|------|------|---------|
+| `create_client` | `client_id, name` | Client folder structure |
+| `list_clients` | — | All registered clients |
+| `read_brandkit` | `client_id` | `brandkit.json` contents |
+| `update_brandkit` | `client_id, updates_json` | Updated brandkit |
+| `read_brand_vault` | `client_id` | Legacy `brand_vault.md` |
 
-### social.ig_get_recent_posts
-- **MCP fn:** `ig_get_recent_posts(limit: int = 10) → list[dict]`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** audience_analyst, analytics_agent, reporting_agent
+### Memory / Knowledge
+| Tool | Args | Returns |
+|------|------|---------|
+| `store_memory` | `key, value, client_id` | Confirmation |
+| `retrieve_memory` | `key, client_id` | Stored value |
+| `search_memory` | `query, client_id, limit` | Semantic search results |
 
-### social.ig_get_account_insights
-- **MCP fn:** `ig_get_account_insights(period: str = "day", metric: str = "impressions,reach,profile_views") → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** audience_analyst, analytics_agent, reporting_agent
+### Content Calendar
+| Tool | Args | Returns |
+|------|------|---------|
+| `read_calendar` | `client_id` | Calendar contents |
+| `write_calendar` | `client_id, content` | Confirmation |
+| `add_calendar_entry` | `client_id, entry` | Confirmation |
 
-### social.ig_delete_post
-- **MCP fn:** `ig_delete_post(media_id: str) → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager
+### Approval Engine
+| Tool | Args | Returns |
+|------|------|---------|
+| `submit_approval` | `action, client_id, draft_output_json, confidence, workflow_id?, notes?` | `task_id` |
+| `approve_task` | `task_id` | Updated task JSON |
+| `reject_task` | `task_id, feedback` | Updated task JSON |
+| `edit_approval_draft` | `task_id, changes_json` | Updated task JSON |
+| `list_approvals` | `client_id?, status?` | Approval list JSON |
+| `approval_queue_summary` | — | Human-readable summary |
+| `check_requires_approval` | `action, confidence, trigger_source` | Boolean JSON |
 
-### social.ig_hashtag_search
-- **MCP fn:** `ig_hashtag_search(hashtag: str) → dict`
-- **Env vars:** `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** (available for content_creator and social_media_manager)
+### Workflow Engine
+| Tool | Args | Returns |
+|------|------|---------|
+| `create_workflow` | `workflow_name, client_id, inputs_json, trigger_source?` | Workflow JSON |
+| `workflow_status` | `workflow_id` | Status dict |
+| `approve_workflow` | `workflow_id` | Updated workflow |
+| `reject_workflow` | `workflow_id, feedback` | Updated workflow |
+| `retry_workflow` | `workflow_id` | Updated workflow |
+| `list_workflows` | `client_id?, state?, limit?` | Workflow list |
+| `list_workflow_templates` | — | Available templates |
 
-### social.suggest_hashtags
-- **MCP fn:** `suggest_hashtags(niche: str, language: str = "en", count: int = 20) → list[str]`
-- **Env vars:** none
-- **Status:** ✅ working (returns AI-guided suggestions, not live hashtag data)
-- **Used by:** content_creator, social_media_manager
+### Deliverables
+| Tool | Args | Returns |
+|------|------|---------|
+| `list_deliverables` | `client_id, workflow_type?, limit?` | Deliverable list |
+| `get_deliverable` | `deliverable_id` | Deliverable metadata + files |
+| `update_deliverable_performance` | `deliverable_id, metrics_json` | Updated metadata |
 
-### social.fb_post_to_page
-- **MCP fn:** `fb_post_to_page(message: str, link: Optional[str] = None) → dict`
-- **Env vars:** `FACEBOOK_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager
+### Learning Bridges (convenience wrappers)
+| Tool | Args | Returns |
+|------|------|---------|
+| `run_daily_analysis` | `client_id` | Performance snapshot JSON |
+| `run_weekly_optimization` | `client_id` | Weekly report JSON |
+| `run_content_gap_detection` | `client_id` | Gap analysis JSON |
 
-### social.fb_get_page_insights
-- **MCP fn:** `fb_get_page_insights(metric: str = "page_impressions,page_reach", period: str = "day") → dict`
-- **Env vars:** `FACEBOOK_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** social_media_manager, analytics_agent
+### Autonomous Planning
+| Tool | Args | Returns |
+|------|------|---------|
+| `run_autonomous_task` | `schedule_name, client_ids?` | Batch results JSON |
+| `list_autonomous_drafts` | `client_id?` | Draft list JSON |
 
----
-
-## `ads.*` — Advertising Tools
-
-Source: `mcp-servers/ads_server.py`
-**Required env vars (Meta):** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` — ⚠️ NOT SET YET
-**Required env vars (Google):** `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CUSTOMER_ID` + OAuth2 setup
-
-### ads.meta_list_campaigns
-- **MCP fn:** `meta_list_campaigns(status: str = "ACTIVE") → list[dict]`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager, analytics_agent
-
-### ads.meta_create_campaign
-- **MCP fn:** `meta_create_campaign(name: str, objective: str, daily_budget_mad: float, status: str = "PAUSED") → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_pause_campaign
-- **MCP fn:** `meta_pause_campaign(campaign_id: str) → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_activate_campaign
-- **MCP fn:** `meta_activate_campaign(campaign_id: str) → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_update_budget
-- **MCP fn:** `meta_update_budget(campaign_id: str, daily_budget_mad: float) → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_get_campaign_insights
-- **MCP fn:** `meta_get_campaign_insights(campaign_id: str, date_preset: str = "last_7d") → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager, analytics_agent, reporting_agent
-
-### ads.meta_get_ad_account_overview
-- **MCP fn:** `meta_get_ad_account_overview() → dict`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_list_ad_sets
-- **MCP fn:** `meta_list_ad_sets(campaign_id: str) → list[dict]`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.meta_list_ads
-- **MCP fn:** `meta_list_ads(ad_set_id: str) → list[dict]`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** ads_manager
-
-### ads.google_ads_get_campaign_performance
-- **MCP fn:** `google_ads_get_campaign_performance(start_date: str, end_date: str) → list[dict]`
-- **Env vars:** `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CUSTOMER_ID` + OAuth2
-- **Status:** ❌ STUB — raises NotImplementedError. Needs: `pip install google-ads` + OAuth2 credentials
-- **Used by:** ads_manager (not yet wired — blocked by stub)
-- **To implement:** See https://developers.google.com/google-ads/api/docs/client-libs/python
-
-### ads.google_ads_pause_campaign
-- **MCP fn:** `google_ads_pause_campaign(campaign_id: str) → dict`
-- **Env vars:** `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_CUSTOMER_ID` + OAuth2
-- **Status:** ❌ STUB — raises NotImplementedError
-- **Used by:** ads_manager (not yet wired — blocked by stub)
-
-### ads.generate_ads_performance_summary
-- **MCP fn:** `generate_ads_performance_summary(client_id: str, period: str = "last_7d") → str`
-- **Env vars:** `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` (optional — degrades gracefully)
-- **Status:** ✅ working (returns partial data if tokens missing)
-- **Used by:** ads_manager, reporting_agent
+### Observability
+| Tool | Args | Returns |
+|------|------|---------|
+| `agency_dashboard` | — | Full system status JSON |
+| `workflow_logs` | `workflow_id, last_n?` | Event log JSON |
+| `agent_activity_report` | `agent_id?, hours?` | Activity stats JSON |
+| `tool_usage_report` | `days?` | Tool call stats JSON |
 
 ---
 
-## `design.*` — Image Generation & Design Tools
+## 2. Social Server (`social`)
 
-Source: `mcp-servers/design_server.py`
-**Required env vars:** `GEMINI_API_KEY` ✅ SET · `ADOBE_FIREFLY_CLIENT_ID/SECRET` ⚠️ NOT SET (Gemini fallback available)
+Instagram and Facebook publishing.
 
-### design.generate_social_image
-- **MCP fn:** `generate_social_image(client_id: str, prompt: str, format: str = "instagram_square", engine: str = "gemini", filename: Optional[str] = None) → str`
-- **Env vars:** `GEMINI_API_KEY` or `ADOBE_FIREFLY_CLIENT_ID`/`ADOBE_FIREFLY_CLIENT_SECRET`
-- **Status:** ✅ working (Gemini engine available)
-- **Used by:** graphic_designer
-
-### design.generate_logo_concept
-- **MCP fn:** `generate_logo_concept(client_id: str, brand_name: str, style: str = "modern minimal", colors: str = "") → str`
-- **Env vars:** `GEMINI_API_KEY`
-- **Status:** ✅ working
-- **Used by:** graphic_designer
-
-### design.generate_ad_creative
-- **MCP fn:** `generate_ad_creative(client_id: str, headline: str, background_style: str, product_description: str, format: str = "instagram_square") → str`
-- **Env vars:** `GEMINI_API_KEY` or `ADOBE_FIREFLY_CLIENT_ID`/`ADOBE_FIREFLY_CLIENT_SECRET`
-- **Status:** ✅ working (Gemini engine available)
-- **Used by:** graphic_designer
-
-### design.resize_for_platform
-- **MCP fn:** `resize_for_platform(input_path: str, client_id: str, formats: list[str]) → dict[str, str]`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** graphic_designer
-
-### design.add_brand_watermark
-- **MCP fn:** `add_brand_watermark(input_path: str, output_path: str, brand_name: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** graphic_designer
-
-### design.parse_design_brief
-- **MCP fn:** `parse_design_brief(brief_text: str) → dict`
-- **Env vars:** none
-- **Status:** ✅ working (returns structured template from brief text)
-- **Used by:** graphic_designer *(added 2026-03-28)*
-
-### design.list_client_assets
-- **MCP fn:** `list_client_assets(client_id: str, pattern: str = "*.png") → list[str]`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** graphic_designer
-
-### design.get_social_sizes
-- **MCP fn:** `get_social_sizes() → dict`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** brand_designer, graphic_designer
+| Tool | Args | Returns |
+|------|------|---------|
+| `publish_instagram_post` | `client_id, image_path, caption, hashtags?` | Post ID |
+| `schedule_instagram_post` | `client_id, image_path, caption, scheduled_time` | Scheduled post ID |
+| `publish_instagram_reel` | `client_id, video_path, caption` | Reel ID |
+| `publish_instagram_story` | `client_id, media_path` | Story ID |
+| `get_instagram_insights` | `client_id, post_id?` | Engagement metrics |
+| `publish_facebook_post` | `client_id, content, image_path?` | Post ID |
+| `get_facebook_insights` | `client_id, post_id?` | Reach, engagement |
 
 ---
 
-## `deploy.*` — Deployment Tools
+## 3. Ads Server (`ads`)
 
-Source: `tools/deploy_tools.py`
-**Required env vars:** `VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` — ⚠️ ALL NOT SET YET
+Meta Ads campaign management.
 
-### deploy.deploy_to_vercel
-- **fn:** `deploy_to_vercel(project_dir: str, prod: bool = False) → dict`
-- **Env vars:** `VERCEL_TOKEN`
-- **Status:** ✅ implemented (blocked until token set)
-- **Used by:** frontend_developer, backend_developer, devops_agent
-
-### deploy.check_vercel_deployment
-- **fn:** `check_vercel_deployment(deployment_url: str) → dict`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** frontend_developer, devops_agent
-
-### deploy.deploy_to_cloudflare_pages
-- **fn:** `deploy_to_cloudflare_pages(project_name: str, directory: str, branch: str = "main") → dict`
-- **Env vars:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-- **Status:** ✅ implemented (blocked until tokens set)
-- **Used by:** devops_agent
+| Tool | Args | Returns |
+|------|------|---------|
+| `create_campaign` | `client_id, objective, budget, audience_json` | Campaign ID |
+| `pause_campaign` | `client_id, campaign_id` | Confirmation |
+| `resume_campaign` | `client_id, campaign_id` | Confirmation |
+| `get_campaign_stats` | `client_id, campaign_id?, days?` | Performance metrics |
+| `create_ad_set` | `client_id, campaign_id, targeting_json, budget` | Ad set ID |
+| `create_ad` | `client_id, ad_set_id, creative_json` | Ad ID |
+| `get_ad_performance` | `client_id, ad_id` | CTR, CPC, ROAS |
 
 ---
 
-## `crew.*` — CrewAI-Only Tools (No MCP Equivalent)
+## 4. Design Server (`design`)
 
-Source: `tools/crew_tools.py` only — these are available to CrewAI agents but not via MCP/OpenClaw
+Image generation and editing (Pillow + AI).
 
-### crew.create_project
-- **CrewAI fn:** `create_project_tool(client_id: str, project_name: str, project_type: str = "campaign") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** client_manager *(added 2026-03-28)*
-
-### crew.get_project_status
-- **CrewAI fn:** `get_project_status_tool(client_id: str, project_name: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, client_manager *(added 2026-03-28)*
-
-### crew.update_project_status
-- **CrewAI fn:** `update_project_status_tool(client_id: str, project_name: str, phase: str, status: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** client_manager *(added 2026-03-28)*
-
-### crew.discussion_log_write
-- **CrewAI fn:** `discussion_log_write_tool(client_id: str, project_name: str, agent_name: str, message: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** content_creator, brand_designer, graphic_designer, video_editor *(added 2026-03-28)*
-
-### crew.discussion_log_read
-- **CrewAI fn:** `discussion_log_read_tool(client_id: str, project_name: str) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate *(added 2026-03-28)*
-
-### crew.approval_queue_add
-- **CrewAI fn:** `approval_queue_add_tool(item_id: str, item_type: str, description: str, client_id: str, data: str = "") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** qa_gate *(added 2026-03-28)*
-
-### crew.approval_queue_list
-- **CrewAI fn:** `approval_queue_list_tool(status: str = "pending") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia *(added 2026-03-28)*
-
-### crew.approval_queue_resolve
-- **CrewAI fn:** `approval_queue_resolve_tool(item_id: str, approved: bool, note: str = "") → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia *(added 2026-03-28)*
-
-### crew.store_learning
-- **CrewAI fn:** `store_learning_tool(insight: str, source: str, metric: str = "", value: str = "", client_id: str = "") → str`
-- **Env vars:** none (uses ChromaDB)
-- **Status:** ✅ working
-- **Used by:** (available to all agents for storing marketing insights)
+| Tool | Args | Returns |
+|------|------|---------|
+| `generate_image` | `prompt, style?, size?` | Generated image path |
+| `edit_image` | `input_path, output_path, operations` | Edited image path |
+| `create_post_design` | `client_id, template, text, image_path?, format?` | Composite image path |
+| `add_logo` | `client_id, image_path, output_path, position?` | Image with logo |
+| `remove_background` | `input_path, output_path` | Image with removed bg (`rembg`) |
+| `resize_image` | `input_path, output_path, width, height` | Resized image |
+| `add_text_overlay` | `input_path, output_path, text, position?, font_size?` | Image with text |
 
 ---
 
-## Standalone Libraries (Not Tools — Used by MCP Servers Internally)
+## 5. Content Server (`content`)
 
-These are not directly called by agents but are imported by MCP servers:
+Captions, strategies, articles, ad copy — all powered by Claude.
 
-| File | Imported By |
-|------|------------|
-| `tools/file_tools.py` | `agency_server.py` |
-| `tools/web_tools.py` | `agency_server.py` |
-| `tools/image_tools.py` | `design_server.py` |
-| `tools/deploy_tools.py` | `mcp-servers` (future), `crew_tools.py` |
-
----
-
-## Environment Variable → Tool Impact Map
-
-| Env Var | Status | Tools Blocked If Missing |
-|---------|--------|------------------------|
-| `ANTHROPIC_API_KEY` | ✅ set | All agents (LLM) |
-| `TELEGRAM_BOT_TOKEN` | ✅ set | OpenClaw gateway |
-| `TELEGRAM_OWNER_ID` | ✅ set | Approval routing |
-| `GEMINI_API_KEY` | ✅ set | design.generate_social_image, design.generate_logo_concept, design.generate_ad_creative |
-| `SERPER_API_KEY` | ❌ missing | agency.search_web, agency.search_web_news, agency.fetch_webpage (search only) |
-| `INSTAGRAM_ACCESS_TOKEN` | ❌ missing | all `social.ig_*` tools |
-| `INSTAGRAM_BUSINESS_ACCOUNT_ID` | ❌ missing | all `social.ig_*` tools |
-| `FACEBOOK_ACCESS_TOKEN` | ❌ missing | social.fb_post_to_page, social.fb_get_page_insights |
-| `FACEBOOK_PAGE_ID` | ❌ missing | social.fb_post_to_page, social.fb_get_page_insights |
-| `META_ACCESS_TOKEN` | ❌ missing | all `ads.meta_*` tools |
-| `META_AD_ACCOUNT_ID` | ❌ missing | all `ads.meta_*` tools (format: `act_123456789`) |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | ❌ missing | ads.google_ads_* (STUB anyway) |
-| `GOOGLE_ADS_CUSTOMER_ID` | ❌ missing | ads.google_ads_* (STUB anyway) |
-| `ADOBE_FIREFLY_CLIENT_ID` | ❌ missing | design.generate_social_image (Gemini fallback available) |
-| `ADOBE_FIREFLY_CLIENT_SECRET` | ❌ missing | design.generate_social_image (Gemini fallback available) |
-| `VERCEL_TOKEN` | ❌ missing | deploy.deploy_to_vercel |
-| `CLOUDFLARE_API_TOKEN` | ❌ missing | deploy.deploy_to_cloudflare_pages |
-| `CLOUDFLARE_ACCOUNT_ID` | ❌ missing | deploy.deploy_to_cloudflare_pages |
+| Tool | Args | Returns |
+|------|------|---------|
+| `generate_caption` | `client_id, topic, platform, language?, tone?` | Caption + hashtags |
+| `generate_content_strategy` | `client_id, goal, duration_weeks, platforms` | Strategy JSON |
+| `create_content_plan` | `client_id, weeks, themes?` | Multi-week calendar JSON |
+| `generate_article` | `client_id, topic, word_count?, language?` | Long-form article |
+| `generate_ad_copy` | `client_id, campaign_goal, offer, language?` | Ad text variations |
 
 ---
 
-## Infrastructure — Health & Process Management
+## 6. Video Server (`video`)
 
-Source: `infra/health_check.py`, `infra/process_manager.py` | MCP tools: `mcp-servers/agency_server.py`
+Reel concepts and video production briefs.
 
-> No CrewAI wrappers — these are operator/Nadia tools via MCP + startup script.
-
-### MCP: agency_health_check
-- **MCP fn:** `agency_health_check() → str`
-- **Status:** ✅ working
-- **Checks:** env vars (by phase), MCP server PIDs, ChromaDB, task bus dirs, memory, clients, disk
-- **Used by:** Nadia via Telegram — instant "is everything OK?" dashboard
-
-### MCP: agency_server_status
-- **MCP fn:** `agency_server_status() → str`
-- **Status:** ✅ working
-- **Used by:** Nadia — see which MCP servers are alive and their PIDs
-
-### MCP: agency_restart_server
-- **MCP fn:** `agency_restart_server(server_name: str) → str`
-- **Status:** ✅ working
-- **Used by:** Nadia — restart a crashed MCP server from Telegram
-
-### MCP: agency_tail_log
-- **MCP fn:** `agency_tail_log(server_name: str, lines: int) → str`
-- **Status:** ✅ working
-- **Used by:** Nadia — read last N log lines to debug a server crash
-
-### Startup Script
-- **File:** `start_agency.sh`
-- **Usage:** `./start_agency.sh [--check|--stop|--restart|--status]`
-- **Starts:** All 4 MCP servers (background, PID tracked) → OpenClaw gateway (foreground)
-- **Logs:** `memory/logs/<server>.log`
-- **PIDs:** `memory/pids/<server>.pid`
+| Tool | Args | Returns |
+|------|------|---------|
+| `generate_reel_concept` | `client_id, topic, duration_s?, style?` | Concept JSON (hook, scenes, transitions, CTA, music) |
+| `generate_video` | `concept_json, output_format?` | Production brief (stub — future Runway/Pika) |
+| `edit_video` | `input_path, operations` | Edit instructions (stub — future ffmpeg) |
 
 ---
 
-## `skill.*` — Skill Evolution System
+## 7. Asset Server (`asset`)
 
-Source: `skills/skill_tracker.py` | CrewAI wrappers: `tools/crew_tools.py` | MCP tools: `mcp-servers/agency_server.py`
+Client asset management — search, tag, choose.
 
-> Logs every skill execution to SQLite (`memory/skill_performance.db`).
-> Auto-updates `skills/<skill>/performance.json` after each run.
-> Flags underperforming skills (success rate < 80%, QA < 7.0, approval < 70%).
-
-### skill.log_run
-- **CrewAI fn:** `skill_log_run_tool(skill, agent, status, client_id, triggered_by, qa_score, duration_s, notes) → str`
-- **MCP fn:** `skill_log_run(...)` in `mcp-servers/agency_server.py`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** content_creator, research_analyst, ads_manager, qa_gate
-
-### skill.log_feedback
-- **CrewAI fn:** `skill_log_feedback_tool(run_id, feedback, approved) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate (records Moncef's approval/rejection per run)
-
-### skill.get_performance
-- **CrewAI fn:** `skill_get_performance_tool(skill) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia (check before routing high-stakes tasks)
-
-### MCP: skill_evolution_report
-- **MCP fn:** `skill_evolution_report() → str`
-- **File:** `mcp-servers/agency_server.py`
-- **Status:** ✅ working
-- **Used by:** Nadia via Telegram — full agency skill health dashboard
+| Tool | Args | Returns |
+|------|------|---------|
+| `list_assets` | `client_id, asset_type?` | File listing with metadata |
+| `search_assets` | `client_id, query, asset_type?, limit?` | Semantic search results |
+| `choose_best_assets` | `client_id, brief, count?` | Ranked asset list |
+| `tag_assets` | `client_id, asset_paths_json, tags_json` | Confirmation |
+| `get_asset_info` | `client_id, asset_path` | Size, dimensions, tags, usage |
 
 ---
 
-## `crew.*` — Agent Communication Protocol (Task Bus)
+## 8. Document Server (`document`)
 
-Source: `comms/task_bus.py` | CrewAI wrappers: `tools/crew_tools.py` | MCP tools: `mcp-servers/agency_server.py`
+Markdown documents, proposals, reports.
 
-> File-based async task bus. Tasks stored as JSON files in `memory/tasks/{pending,active,done,failed}/`.
-> Agents hand off work without Moncef's manual intervention.
+| Tool | Args | Returns |
+|------|------|---------|
+| `generate_document` | `client_id, doc_type, title, sections_json, language?` | Markdown document |
+| `generate_report` | `client_id, report_type, period, data_json?` | Performance report |
 
-### crew.task_send
-- **CrewAI fn:** `task_send_tool(from_agent, to_agent, title, description, inputs_json, skill, priority) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, content_creator, brand_designer, research_analyst, campaign_strategist, qa_gate, ads_manager
-- **Typical pipeline:** content_creator → qa_gate → social_media_manager
-
-### crew.task_list
-- **CrewAI fn:** `task_list_tool(agent_id, status) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate, content_creator, graphic_designer, campaign_strategist, ads_manager, social_media_manager
-
-### crew.task_claim
-- **CrewAI fn:** `task_claim_tool(agent_id, task_id) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate, content_creator, graphic_designer, campaign_strategist, ads_manager, social_media_manager
-
-### crew.task_complete
-- **CrewAI fn:** `task_complete_tool(task_id, outputs_json, note) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate, content_creator, brand_designer, graphic_designer, campaign_strategist, ads_manager, social_media_manager
-
-### crew.task_fail
-- **CrewAI fn:** `task_fail_tool(task_id, reason) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** qa_gate, graphic_designer (marks tasks they cannot complete)
-
-### crew.task_reply
-- **CrewAI fn:** `task_reply_tool(task_id, from_agent, message) → str`
-- **Env vars:** none
-- **Status:** ✅ working
-- **Used by:** nadia, qa_gate, content_creator, graphic_designer, social_media_manager
-
-### MCP: send_agent_task
-- **MCP fn:** `send_agent_task(from_agent, to_agent, title, description, inputs_json, skill, priority) → str`
-- **File:** `mcp-servers/agency_server.py`
-- **Status:** ✅ working
-- **Used by:** Nadia via OpenClaw/Telegram — manually dispatch tasks to agents
-
-### MCP: list_agent_tasks
-- **MCP fn:** `list_agent_tasks(agent_id, status) → str`
-- **File:** `mcp-servers/agency_server.py`
-- **Status:** ✅ working
-- **Used by:** Nadia — agency-wide task overview or per-agent inbox inspection
-
-### MCP: get_agent_task
-- **MCP fn:** `get_agent_task(task_id) → str`
-- **File:** `mcp-servers/agency_server.py`
-- **Status:** ✅ working
-- **Used by:** Nadia — inspect a specific task including full thread of messages
+`doc_type` options: `proposal`, `brief`, `report`, `plan`, `strategy`
 
 ---
 
-## Known Issues & TODOs
+## 9. Web Server (`web`)
 
-| Issue | File | Priority |
-|-------|------|---------|
-| Google Ads stubs — needs OAuth2 + `google-ads` library | `mcp-servers/ads_server.py` | Medium |
-| SERPER_API_KEY not set — all web search blocked | `~/agency/.env` | High |
-| Instagram/Facebook tokens not set — publishing blocked | `~/agency/.env` | High |
-| Meta Ads tokens not set — ads management blocked | `~/agency/.env` | High |
-| No test suite | `tests/` (doesn't exist) | High |
-| `suggest_hashtags` returns AI prompt guidance, not live data | `mcp-servers/social_server.py` | Low |
-| `agency.ig_hashtag_search` not wired to any agent | `crews/creative_crew.yaml` | Low |
+Next.js website generation and updates.
+
+| Tool | Args | Returns |
+|------|------|---------|
+| `generate_website` | `client_id, site_type, pages_json?, tech_stack?` | Scaffold path + summary |
+| `update_website` | `client_id, page, changes` | Confirmation |
+
+Output saved to `clients/{client_id}/web/`.
+
+---
+
+## 10. Learning Server (`learning`)
+
+ChromaDB-backed knowledge, inspiration search, performance analytics.
+
+| Tool | Args | Returns |
+|------|------|---------|
+| `store_learning` | `insight, source, client_id?, metric?, value?, category?` | Stored learning ID |
+| `query_learnings` | `query, client_id?, category?, limit?` | Semantic search results |
+| `find_inspiration` | `query, platform?, industry?, limit?` | Web search + stored results |
+| `daily_analysis` | `client_id` | Performance snapshot + insights |
+| `weekly_optimization` | `client_id` | Weekly strategy recommendations |
+| `detect_content_gaps` | `client_id` | Missing themes + recommended posts |
+
+---
+
+## Workflow Templates
+
+Predefined end-to-end workflows (defined in `core/workflow_registry.py`):
+
+| Template | Steps | Approval Gate |
+|----------|-------|---------------|
+| `create_instagram_post` | query_learnings → choose_assets → generate_caption → qa_review → **approval** | Before publish |
+| `create_reel` | find_inspiration → query_learnings → generate_reel_concept → choose_assets → generate_caption → qa_review → **approval** | Before publish |
+| `content_planning` | detect_gaps → generate_strategy → create_plan → qa_review → **approval** | Before finalising |
+| `website_creation` | query_learnings → generate_website → qa_review → **approval** | Before deploy |
+| `generate_report` | run_analysis → generate_report → qa_review | No approval (internal) |
+| `daily_analysis` | run_analysis → detect_gaps | No approval (autonomous) |
+
+---
+
+## Agent → Tool Mapping
+
+| Agent | Primary Tools |
+|-------|---------------|
+| `nadia` | All approval tools, workflow tools, agency_dashboard, routing |
+| `strategy_agent` | web_search, query_learnings, find_inspiration, generate_content_strategy, read_brandkit |
+| `content_agent` | generate_caption, create_content_plan, generate_article, generate_report, generate_document |
+| `design_agent` | generate_image, create_post_design, edit_image, remove_background, read_brandkit |
+| `video_agent` | generate_reel_concept, generate_video, choose_best_assets |
+| `asset_manager` | list_assets, search_assets, tag_assets, store_learning, query_learnings |
+
+---
+
+## Governance
+
+| Rule | Detail |
+|------|--------|
+| Manual > Autonomous | Manual commands always override queued autonomous tasks |
+| Confidence threshold | Autonomous actions need ≥ 0.75 to enter approval queue |
+| Approval required | Publishing, ads, deploys, brand changes, client comms |
+| Retry limit | Max 3 retries per failed workflow step |
+| Audit trail | Every workflow event logged to `logs/workflow_logs/` |

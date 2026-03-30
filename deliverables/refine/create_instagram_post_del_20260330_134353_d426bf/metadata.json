@@ -1,0 +1,27 @@
+{
+  "deliverable_id": "del_20260330_134353_d426bf",
+  "client_id": "refine",
+  "workflow_name": "create_instagram_post",
+  "workflow_id": "wf_20260330_134353_6a7f67",
+  "agents_used": [
+    "strategy_agent",
+    "asset_manager",
+    "content_agent",
+    "nadia"
+  ],
+  "tools_used": [],
+  "files": [
+    "outputs.json",
+    "qa_review.json"
+  ],
+  "created_at": "2026-03-30T13:43:53.209952",
+  "approved_by": "moncef",
+  "approved_at": "2026-03-30T13:44:09.587022",
+  "trigger_source": "manual",
+  "performance": {
+    "views": 12500,
+    "engagement_rate": 0.087,
+    "saves": 45
+  },
+  "tags": []
+}

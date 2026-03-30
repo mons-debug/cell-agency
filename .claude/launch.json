@@ -1,0 +1,78 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Cell Agency (Full Stack)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["start_agency.sh"],
+      "port": 18789
+    },
+    {
+      "name": "OpenClaw Gateway",
+      "runtimeExecutable": "openclaw",
+      "runtimeArgs": ["gateway", "run"],
+      "port": 18789,
+      "autoPort": true
+    },
+    {
+      "name": "MCP: agency",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/agency_server.py"],
+      "port": 8001
+    },
+    {
+      "name": "MCP: social",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/social_server.py"],
+      "port": 8002
+    },
+    {
+      "name": "MCP: ads",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/ads_server.py"],
+      "port": 8003
+    },
+    {
+      "name": "MCP: design",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/design_server.py"],
+      "port": 8004
+    },
+    {
+      "name": "MCP: content",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/content_server.py"],
+      "port": 8005
+    },
+    {
+      "name": "MCP: video",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/video_server.py"],
+      "port": 8006
+    },
+    {
+      "name": "MCP: asset",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/asset_server.py"],
+      "port": 8007
+    },
+    {
+      "name": "MCP: document",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/document_server.py"],
+      "port": 8008
+    },
+    {
+      "name": "MCP: web",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/web_server.py"],
+      "port": 8009
+    },
+    {
+      "name": "MCP: learning",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "python", "mcp-servers/learning_server.py"],
+      "port": 8010
+    }
+  ]
+}
